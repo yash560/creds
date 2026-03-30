@@ -35,6 +35,8 @@ interface IItem {
   folderId: string | null;
   fields: Map<string, string>;
   fileData?: string;
+  filePublicId?: string;
+  fileResourceType?: string;
   fileName?: string;
   fileMimeType?: string;
   attachments: {
@@ -42,6 +44,8 @@ interface IItem {
     name: string;
     mimeType: string;
     label?: string;
+    publicId?: string;
+    resourceType?: string;
   }[];
   dedupeKey?: string;
   isFavourite: boolean;
@@ -58,6 +62,8 @@ const ItemSchema = new Schema<IItem>(
     folderId: { type: String, default: null },
     fields: { type: Map, of: String, default: {} },
     fileData: { type: String },
+    filePublicId: { type: String },
+    fileResourceType: { type: String },
     fileName: { type: String },
     fileMimeType: { type: String },
     attachments: [{
@@ -65,6 +71,8 @@ const ItemSchema = new Schema<IItem>(
       name: { type: String, required: true },
       mimeType: { type: String, required: true },
       label: { type: String },
+      publicId: { type: String },
+      resourceType: { type: String },
     }],
     dedupeKey: { type: String, index: true },
     isFavourite: { type: Boolean, default: false },

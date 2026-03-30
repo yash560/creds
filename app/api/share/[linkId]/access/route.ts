@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ShareLinkModel, ItemModel } from '@/lib/models';
 import { decryptFields } from '@/lib/crypto';
+import type { Attachment } from '@/lib/types';
 
 interface TokenData {
     linkId: string;
     verified: boolean;
     timestamp: number;
 }
+
+type ShareAttachment = {
+    data: string;
+    name: string;
+    mimeType: string;
+    label?: string;
+    publicId?: string;
+    resourceType?: string;
+};
 
 interface AccessibleItem {
     _id?: string;
@@ -18,15 +28,20 @@ interface AccessibleItem {
     fileData?: string;
     fileName?: string;
     fileMimeType?: string;
-    attachments?: Array<{ name: string; size: number }>;
+    attachments?: ShareAttachment[];
     editable?: boolean;
 }
 
 // GET /api/share/[linkId]/access - Get shared item content (requires verification token)
-export async function GET(req: NextRequest, { params }: { params: { linkId: string } }) {
-    await connectDB();
-    const { linkId } = params;
-    const authHeader = req.headers.get('authorization');
+export async function GET(req: NextRequest) {
+  await connectDB();
+  const pathSegments = req.nextUrl.pathname.split('/').filter(Boolean);
+  const shareIndex = pathSegments.findIndex((segment) => segment === 'share');
+  const linkId = shareIndex >= 0 ? pathSegments[shareIndex + 1] : undefined;
+  if (!linkId) {
+    return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
+  }
+  const authHeader = req.headers.get('authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return NextResponse.json({ ok: false, error: 'Access token required' }, { status: 401 });

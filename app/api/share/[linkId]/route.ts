@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ShareLinkModel, ItemModel } from '@/lib/models';
 import { decryptFields } from '@/lib/crypto';
-import { comparePassword } from '@/lib/crypto-secret';
-
 // GET /api/share/[linkId] - Get share link info (NO content yet)
-export async function GET(req: NextRequest, { params }: { params: { linkId: string } }) {
+export async function GET(req: NextRequest) {
     await connectDB();
-    const { linkId } = params;
+    const pathSegments = req.nextUrl.pathname.split('/').filter(Boolean);
+    const shareIndex = pathSegments.findIndex((segment) => segment === 'share');
+    const linkId = shareIndex >= 0 ? pathSegments[shareIndex + 1] : undefined;
+    if (!linkId) {
+        return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
+    }
 
     const shareLink = await ShareLinkModel.findOne({ linkId }).lean();
     if (!shareLink) {

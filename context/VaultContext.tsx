@@ -8,7 +8,12 @@ import {
   ReactNode,
   useCallback,
 } from "react";
-import type { VaultItem, Folder, FamilyMember } from "@/lib/types";
+import type {
+  VaultItem,
+  Folder,
+  FamilyMember,
+  Attachment,
+} from "@/lib/types";
 import { useAuth } from "./AuthContext";
 import { getEncryptedCache, setEncryptedCache } from "@/lib/crypto-vault";
 
@@ -45,6 +50,92 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const parseApiResponse = useCallback(async (res: Response) => {
+    const txt = await res.text();
+    if (!txt) {
+      throw new Error(`Empty response (${res.status})`);
+    }
+    const payload = JSON.parse(txt);
+    if (!res.ok) {
+      throw new Error(payload?.error || `Request failed (${res.status})`);
+    }
+    return payload;
+  }, []);
+
+  const uploadImageAsset = useCallback(
+    async (dataUrl: string, fileName?: string) => {
+      const response = await fetch("/api/uploads/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: dataUrl, fileName }),
+      });
+      const payload = await response.json();
+      if (!payload.ok) {
+        throw new Error(payload.error || "Image upload failed");
+      }
+      return payload.data as {
+        url: string;
+        publicId: string;
+        resourceType: string;
+      };
+    },
+    [],
+  );
+
+  const getAttachmentName = useCallback(
+    (att: Partial<Attachment | { fileName?: string; label?: string; name?: string }>) =>
+      att.name || att.fileName || att.label || "attachment",
+    [],
+  );
+
+  const preparePayload = useCallback(
+    async (payload: Partial<VaultItem>) => {
+      let attachments = payload.attachments;
+      if (attachments?.length) {
+        attachments = await Promise.all(
+          attachments.map(async (att) => {
+            const base = {
+              ...att,
+              name: getAttachmentName(att),
+            };
+            if (base.data?.startsWith("data:")) {
+              const upload = await uploadImageAsset(base.data, base.fileName);
+              return {
+                ...base,
+                data: upload.url,
+                publicId: upload.publicId,
+                resourceType: upload.resourceType,
+              };
+            }
+            return base;
+          }),
+        );
+      }
+
+      const prepared: Partial<VaultItem> = {
+        ...payload,
+        attachments,
+      };
+
+      if (
+        payload.fileData &&
+        typeof payload.fileData === "string" &&
+        payload.fileData.startsWith("data:")
+      ) {
+        const upload = await uploadImageAsset(
+          payload.fileData,
+          payload.fileName || `upload-${Date.now()}`,
+        );
+        prepared.fileData = upload.url;
+        prepared.filePublicId = upload.publicId;
+        prepared.fileResourceType = upload.resourceType;
+      }
+
+      return prepared;
+    },
+    [uploadImageAsset, getAttachmentName],
+  );
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -117,12 +208,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback(
     async (payload: Partial<VaultItem>): Promise<VaultItem> => {
+      const prepared = await preparePayload(payload);
       const res = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(prepared),
       });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
 
       // Log duplicate detection
       if (data.isDuplicate) {
@@ -139,7 +231,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       });
       return data.data;
     },
-    [cryptoKey],
+    [cryptoKey, preparePayload, parseApiResponse],
   );
 
   const addItemsBulk = useCallback(
@@ -151,12 +243,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
       for (const p of payloads) {
         try {
+          const prepared = await preparePayload(p);
           const res = await fetch("/api/items", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(p),
+            body: JSON.stringify(prepared),
           });
-          const data = await res.json();
+          const data = await parseApiResponse(res);
           if (data.ok) {
             newItems.push(data.data);
             if (data.isDuplicate) {
@@ -185,25 +278,27 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [cryptoKey],
+    [cryptoKey, preparePayload, parseApiResponse],
   );
 
   const updateItem = useCallback(
     async (id: string, payload: Partial<VaultItem>) => {
-      await fetch(`/api/items/${id}`, {
+      const prepared = await preparePayload(payload);
+      const res = await fetch(`/api/items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(prepared),
       });
+      await parseApiResponse(res);
       setItems((prev) => {
         const next = prev.map((it) =>
-          it._id === id ? { ...it, ...payload } : it,
+          it._id === id ? { ...it, ...prepared } : it,
         );
         if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
         return next;
       });
     },
-    [cryptoKey],
+    [cryptoKey, preparePayload, parseApiResponse],
   );
 
   const deleteItem = useCallback(

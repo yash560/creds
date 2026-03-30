@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+The app requires a few secrets plus Cloudinary credentials for any image uploads:
+
+| Name | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string used by the API routes. |
+| `ENCRYPTION_SECRET` | 32-byte hex secret for field-level encryption of item metadata. |
+| `JWT_SECRET` | Signing secret for session cookies. |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for storing image scans and attachments. |
+| `CLOUDINARY_API_KEY` | Cloudinary API key permitted to upload/delete assets. |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret paired with the key above. |
+
+With these configured, the `/api/uploads/image` endpoint will upload data URLs to Cloudinary and the item endpoints will keep attachments in sync.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

@@ -4,9 +4,14 @@ import { ShareLinkModel } from '@/lib/models';
 import { verifySecret } from '@/lib/crypto-secret';
 
 // POST /api/share/[linkId]/verify - Verify PIN or email
-export async function POST(req: NextRequest, { params }: { params: { linkId: string } }) {
+export async function POST(req: NextRequest) {
     await connectDB();
-    const { linkId } = params;
+    const pathSegments = req.nextUrl.pathname.split('/').filter(Boolean);
+    const shareIndex = pathSegments.findIndex((segment) => segment === 'share');
+    const linkId = shareIndex >= 0 ? pathSegments[shareIndex + 1] : undefined;
+    if (!linkId) {
+        return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
+    }
     const { pin, email } = await req.json();
 
     const shareLink = await ShareLinkModel.findOne({ linkId });

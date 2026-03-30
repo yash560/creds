@@ -61,56 +61,67 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
-  await connectDB();
-  const body = await req.json();
-  let { type, title, tags, folderId, fields, fileData, fileName, fileMimeType, attachments, dedupeKey } = body;
+  try {
+    await connectDB();
+    const body = await req.json();
+    const { type, title, tags, folderId, fields, fileData, fileName, fileMimeType, filePublicId, fileResourceType, attachments } = body;
+    let { dedupeKey } = body;
 
-  const encrypted = await encryptFields(fields || {});
+    const encrypted = await encryptFields(fields || {});
 
-  // Generate dedupeKey if not provided or if fileData exists (for files)
-  if (!dedupeKey) {
-    if (fileData) {
-      // For file-based items (documents, scans), hash the file data
-      dedupeKey = `file_${type}_${hashContent(fileData)}`;
-    } else if (type === 'password' && fields?.username && fields?.url) {
-      // For passwords without explicit dedupeKey, use username+url
-      dedupeKey = `pass_${hashContent(`${fields.url}|${fields.username}`)}`;
-    } else if (type === 'card' && fields?.cardNumber) {
-      // For cards, use the card number
-      dedupeKey = `card_${hashContent(fields.cardNumber)}`;
-    } else {
-      // For other items, use title+type+fields hash
-      const fieldStr = Object.entries(fields || {})
-        .map(([k, v]) => `${k}=${v}`)
-        .join('&');
-      dedupeKey = `item_${type}_${hashContent(`${title}|${fieldStr}`)}`;
+    // Generate dedupeKey if not provided or if fileData exists (for files)
+    if (!dedupeKey) {
+      if (fileData) {
+        // For file-based items (documents, scans), hash the file data
+        dedupeKey = `file_${type}_${hashContent(fileData)}`;
+      } else if (type === 'password' && fields?.username && fields?.url) {
+        // For passwords without explicit dedupeKey, use username+url
+        dedupeKey = `pass_${hashContent(`${fields.url}|${fields.username}`)}`;
+      } else if (type === 'card' && fields?.cardNumber) {
+        // For cards, use the card number
+        dedupeKey = `card_${hashContent(fields.cardNumber)}`;
+      } else {
+        // For other items, use title+type+fields hash
+        const fieldStr = Object.entries(fields || {})
+          .map(([k, v]) => `${k}=${v}`)
+          .join('&');
+        dedupeKey = `item_${type}_${hashContent(`${title}|${fieldStr}`)}`;
+      }
     }
-  }
 
-  // Duplicate check - return existing item if found
-  const existing = await ItemModel.findOne({ userId: session.userId, dedupeKey }).lean();
-  if (existing) {
-    const raw = existing.fields instanceof Map
-      ? Object.fromEntries(existing.fields)
-      : (existing.fields as Record<string, string>);
-    const decryptedFields = await decryptFields(raw);
-    return NextResponse.json({
-      ok: true,
-      data: { ...existing, _id: existing._id!.toString(), fields: decryptedFields },
-      isDuplicate: true
+    // Duplicate check - return existing item if found
+    const existing = await ItemModel.findOne({ userId: session.userId, dedupeKey }).lean();
+    if (existing) {
+      const raw = existing.fields instanceof Map
+        ? Object.fromEntries(existing.fields)
+        : (existing.fields as Record<string, string>);
+      const decryptedFields = await decryptFields(raw);
+      return NextResponse.json({
+        ok: true,
+        data: { ...existing, _id: existing._id!.toString(), fields: decryptedFields },
+        isDuplicate: true
+      });
+    }
+
+    const item = await ItemModel.create({
+      userId: session.userId,
+      type, title,
+      tags: tags || [],
+      folderId: folderId || null,
+      fields: encrypted,
+      attachments: attachments || [],
+      fileData,
+      filePublicId,
+      fileResourceType,
+      fileName,
+      fileMimeType,
+      dedupeKey,
     });
+
+    return NextResponse.json({ ok: true, data: { ...item.toObject(), _id: item._id!.toString() } }, { status: 201 });
+  } catch (error) {
+    console.error('Items POST failed', error);
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
-
-  const item = await ItemModel.create({
-    userId: session.userId,
-    type, title,
-    tags: tags || [],
-    folderId: folderId || null,
-    fields: encrypted,
-    attachments: attachments || [],
-    fileData, fileName, fileMimeType,
-    dedupeKey,
-  });
-
-  return NextResponse.json({ ok: true, data: { ...item.toObject(), _id: item._id!.toString() } }, { status: 201 });
 }

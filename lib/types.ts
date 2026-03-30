@@ -13,6 +13,9 @@ export interface Attachment {
   label?: string; // e.g. "Front Side", "Back Side"
   mimeType: string;
   fileName: string;
+  name?: string;
+  publicId?: string;
+  resourceType?: string;
 }
 
 // ─── Vault Item ────────────────────────────────────────────────────────────────
@@ -27,6 +30,8 @@ export interface VaultItem {
   fields: Record<string, string>;
   /** Primary / Legacy single file */
   fileData?: string;
+  filePublicId?: string;
+  fileResourceType?: string;
   fileName?: string;
   fileMimeType?: string;
   /** Multiple attachments (new) */

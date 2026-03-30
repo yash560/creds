@@ -91,8 +91,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteData = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDeleteData = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setDeletePasswordError("");
 
     if (!deletePassword) {
