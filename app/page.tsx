@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { KeyRound, FileText, ScanLine, Star, Plus, Clock } from 'lucide-react';
+import { KeyRound, FileText, ScanLine, Star, Plus, Clock, CreditCard } from 'lucide-react';
 import { useVault } from '@/context/VaultContext';
 import Link from 'next/link';
 import AddItemModal from '@/components/AddItemModal';
@@ -12,6 +12,7 @@ import type { VaultItem } from '@/lib/types';
 
 const STATS = [
   { label: 'Passwords', type: 'password', icon: KeyRound, color: 'var(--accent-primary)', bg: 'rgba(99,102,241,0.12)' },
+  { label: 'Cards', type: 'card', icon: CreditCard, color: 'var(--accent-amber)', bg: 'rgba(245,158,11,0.12)' },
   { label: 'Documents', type: 'document', icon: FileText, color: 'var(--accent-emerald)', bg: 'rgba(16,185,129,0.12)' },
   { label: 'Scans', type: 'scan', icon: ScanLine, color: 'var(--accent-secondary)', bg: 'rgba(139,92,246,0.12)' },
 ];

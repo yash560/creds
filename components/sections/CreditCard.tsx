@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Eye, EyeOff, Download } from 'lucide-react';
 import type { CardItem } from '@/lib/types';
 import CopyButton from '../CopyButton';
@@ -85,11 +85,45 @@ function BrandBadge({ brand }: { brand: string }) {
 export default function CreditCardView({ item }: CreditCardViewProps) {
   const [showCvv, setShowCvv] = useState(false);
   const [showPin, setShowPin] = useState(false);
-  const { cardNumber = '', cardholderName = '', expiry = '', cvv = '', pin = '', notes = '', cardType } = item.fields;
+  const {
+    cardNumber = '',
+    cardholderName = '',
+    expiry = '',
+    cvv = '',
+    pin = '',
+    notes = '',
+    cardType,
+    cardMode,
+  } = item.fields;
   const brand = cardType || detectCardBrand(cardNumber);
   const attachments = item.attachments ?? [];
   const frontAttachment = attachments.find((att) => att.side === 'front');
   const backAttachment = attachments.find((att) => att.side === 'back');
+  const formattedTags = item.tags ?? [];
+  const createdLabel = useMemo(() => {
+    if (!item.createdAt) return '—';
+    return new Date(item.createdAt).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, [item.createdAt]);
+  const updatedLabel = useMemo(() => {
+    if (!item.updatedAt) return '—';
+    return new Date(item.updatedAt).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, [item.updatedAt]);
+  const modeLabel =
+    cardMode === 'credit'
+      ? 'Credit'
+      : cardMode === 'debit'
+        ? 'Debit'
+        : '—';
+  const networkLabel = (cardType || brand || '—').toUpperCase();
+  const attachmentCountLabel = `${attachments.length} image${attachments.length === 1 ? '' : 's'}`;
 
   const downloadAttachment = (att: { data: string; fileName?: string }) => {
     if (!att || !att.data) return;
@@ -120,6 +154,47 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
             <div className="card-expiry-value">{expiry || 'MM/YY'}</div>
           </div>
         </div>
+      </div>
+
+      <div className="card-meta-grid">
+        <div className="card-meta-item">
+          <span className="card-meta-label">Mode</span>
+          {cardMode ? (
+            <span className={`card-mode-badge card-mode-badge--${cardMode}`}>
+              {modeLabel}
+            </span>
+          ) : (
+            <span className="card-meta-value">—</span>
+          )}
+        </div>
+        <div className="card-meta-item">
+          <span className="card-meta-label">Network</span>
+          <span className="card-meta-value">{networkLabel}</span>
+        </div>
+        <div className="card-meta-item">
+          <span className="card-meta-label">Attachments</span>
+          <span className="card-meta-value">{attachmentCountLabel}</span>
+        </div>
+        <div className="card-meta-item">
+          <span className="card-meta-label">Created</span>
+          <span className="card-meta-value">{createdLabel}</span>
+        </div>
+        <div className="card-meta-item">
+          <span className="card-meta-label">Updated</span>
+          <span className="card-meta-value">{updatedLabel}</span>
+        </div>
+        {formattedTags.length > 0 && (
+          <div className="card-meta-item card-meta-item--tags">
+            <span className="card-meta-label">Tags</span>
+            <div className="tags" style={{ margin: 0 }}>
+              {formattedTags.map((tag) => (
+                <span key={`${item._id}-${tag}`} className="tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {item.fileData && item.fileMimeType?.startsWith('image/') && (

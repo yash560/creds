@@ -63,6 +63,7 @@ export interface CardItem extends VaultItem {
     expiry: string;
     cvv: string;
     cardType?: string; // visa | mastercard | amex | etc.
+    cardMode?: 'debit' | 'credit';
     pin?: string;
     notes?: string;
   };

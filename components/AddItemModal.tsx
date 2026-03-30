@@ -61,7 +61,7 @@ export default function AddItemModal({
   folders = [],
 }: AddItemModalProps) {
   const [type, setType] = useState<ItemType>(
-    existing?.type ?? (initialType === "card" ? "document" : initialType),
+    existing?.type ?? initialType ?? "password",
   );
   const [title, setTitle] = useState(existing?.title ?? "");
   const [tags, setTags] = useState((existing?.tags ?? []).join(", "));
@@ -271,6 +271,32 @@ export default function AddItemModal({
       closeCardCamera();
     }
   }, [open, closeCardCamera]);
+
+  useEffect(() => {
+    if (!open) return;
+    const resolvedType = existing?.type ?? initialType ?? "password";
+    setType(resolvedType);
+    setTitle(existing?.title ?? "");
+    setTags((existing?.tags ?? []).join(", "));
+    setFolderId(existing?.folderId ?? "");
+    setFields(existing?.fields ? { ...existing.fields } : {});
+    setAttachments(
+      existing?.attachments
+        ? existing.attachments.map((att) => ({ ...att }))
+        : [],
+    );
+    pendingCropRef.current = null;
+    setErrors({});
+    setDuplicateWarning("");
+    setCropTarget(null);
+    setActiveCardCameraSide(null);
+    stopCardCamera();
+  }, [
+    open,
+    existing,
+    initialType,
+    stopCardCamera,
+  ]);
 
   useEffect(() => {
     if (!activeCardCameraSide) return;
@@ -706,14 +732,15 @@ const CardFields = memo(function CardFields({
       </div>
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">Card Number *</label>
-        <input
-          className={`form-input mono ${errors.cardNumber ? "border-red-500" : ""}`}
-          value={fields.cardNumber || ""}
-          onChange={(e) =>
-            setField("cardNumber", e.target.value.replace(/\D/g, ""))
-          }
-          placeholder="1234 5678 9012 3456"
-        />
+              <input
+                className={`form-input mono ${errors.cardNumber ? "border-red-500" : ""}`}
+                value={fields.cardNumber || ""}
+                onChange={(e) =>
+                  setField("cardNumber", e.target.value.replace(/\D/g, ""))
+                }
+                placeholder="1234 5678 9012 3456"
+                inputMode="numeric"
+              />
         {errors.cardNumber && (
           <div
             style={{
@@ -735,19 +762,20 @@ const CardFields = memo(function CardFields({
       >
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">Expiry (MM/YY) *</label>
-          <input
-            className={`form-input mono ${errors.expiry ? "border-red-500" : ""}`}
-            value={fields.expiry || ""}
-            onChange={(e) => {
-              let val = e.target.value.replace(/\D/g, "");
+              <input
+                className={`form-input mono ${errors.expiry ? "border-red-500" : ""}`}
+                value={fields.expiry || ""}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/\D/g, "");
               if (val.length >= 2) {
                 val = val.slice(0, 2) + "/" + val.slice(2, 4);
               }
               setField("expiry", val);
             }}
             placeholder="MM/YY"
-            maxLength={5}
-          />
+                maxLength={5}
+                inputMode="numeric"
+              />
           {errors.expiry && (
             <div
               style={{
@@ -762,16 +790,17 @@ const CardFields = memo(function CardFields({
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label">CVV *</label>
-          <input
-            className={`form-input mono ${errors.cvv ? "border-red-500" : ""}`}
-            type="text"
-            value={fields.cvv || ""}
-            onChange={(e) =>
+              <input
+                className={`form-input mono ${errors.cvv ? "border-red-500" : ""}`}
+                type="text"
+                value={fields.cvv || ""}
+                onChange={(e) =>
               setField("cvv", e.target.value.replace(/\D/g, "").slice(0, 4))
             }
             placeholder="123"
-            maxLength={4}
-          />
+                maxLength={4}
+                inputMode="numeric"
+              />
           {errors.cvv && (
             <div
               style={{
@@ -786,8 +815,25 @@ const CardFields = memo(function CardFields({
         </div>
       </div>
       <div className="form-group" style={{ marginBottom: 0 }}>
+        <label className="form-label">Card Type</label>
+        <select
+          className="form-select"
+          value={fields.cardMode || ""}
+          onChange={(e) =>
+            setField(
+              "cardMode",
+              (e.target.value as "debit" | "credit" | "") || "",
+            )
+          }
+        >
+          <option value="">Select card type</option>
+          <option value="credit">Credit</option>
+          <option value="debit">Debit</option>
+        </select>
+      </div>
+      <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">
-          Card Type (Visa, Mastercard, Amex, etc.)
+          Card Network (Visa, Mastercard, Amex, etc.)
         </label>
         <input
           className="form-input"
@@ -807,6 +853,7 @@ const CardFields = memo(function CardFields({
           }
           placeholder="1234"
           maxLength={6}
+          inputMode="numeric"
         />
       </div>
       <div className="form-group" style={{ marginBottom: 0 }}>
@@ -1185,10 +1232,14 @@ function CropOverlay({
 
   const [crop, setCrop] = useState<CropRect>({ x: 10, y: 10, w: 80, h: 80 });
   const dragRef = useRef<{
+    mode: "move" | "resize";
     startX: number;
     startY: number;
     originX: number;
     originY: number;
+    originW: number;
+    originH: number;
+    edge?: "left" | "right" | "top" | "bottom";
   } | null>(null);
 
   const updateCrop = useCallback(
@@ -1200,20 +1251,70 @@ function CropOverlay({
 
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
-      if (!dragRef.current) return;
+      const current = dragRef.current;
+      if (!current) return;
       const bounds = frameRef.current?.getBoundingClientRect();
       if (!bounds) return;
-      const dx =
-        ((event.clientX - dragRef.current.startX) / bounds.width) * 100;
-      const dy =
-        ((event.clientY - dragRef.current.startY) / bounds.height) * 100;
-      setCrop((prev) =>
-        clampCropRect({
-          ...prev,
-          x: dragRef.current!.originX + dx,
-          y: dragRef.current!.originY + dy,
-        }),
-      );
+      const dx = ((event.clientX - current.startX) / bounds.width) * 100;
+      const dy = ((event.clientY - current.startY) / bounds.height) * 100;
+      setCrop((prev) => {
+        if (current.mode === "move") {
+          return clampCropRect({
+            ...prev,
+            x: current.originX + dx,
+            y: current.originY + dy,
+          });
+        }
+
+        const next: CropRect = {
+          x: current.originX,
+          y: current.originY,
+          w: current.originW,
+          h: current.originH,
+        };
+
+        if (current.edge === "left") {
+          const newX = clampValue(
+            current.originX + dx,
+            0,
+            current.originX + current.originW - 10,
+          );
+          const newW = clampValue(
+            current.originW + (current.originX - newX),
+            10,
+            100 - newX,
+          );
+          next.x = newX;
+          next.w = newW;
+        } else if (current.edge === "right") {
+          next.w = clampValue(
+            current.originW + dx,
+            10,
+            100 - current.originX,
+          );
+        } else if (current.edge === "top") {
+          const newY = clampValue(
+            current.originY + dy,
+            0,
+            current.originY + current.originH - 10,
+          );
+          const newH = clampValue(
+            current.originH + (current.originY - newY),
+            10,
+            100 - newY,
+          );
+          next.y = newY;
+          next.h = newH;
+        } else if (current.edge === "bottom") {
+          next.h = clampValue(
+            current.originH + dy,
+            10,
+            100 - current.originY,
+          );
+        }
+
+        return clampCropRect(next);
+      });
     };
     const handlePointerUp = () => {
       if (dragRef.current) dragRef.current = null;
@@ -1224,17 +1325,37 @@ function CropOverlay({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [clampCropRect]);
+  }, [clampCropRect, clampValue]);
 
   const handleRectPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     dragRef.current = {
+      mode: "move",
       startX: event.clientX,
       startY: event.clientY,
       originX: crop.x,
       originY: crop.y,
+      originW: crop.w,
+      originH: crop.h,
     };
   };
+
+  const createResizePointerDown =
+    (edge: "left" | "right" | "top" | "bottom") =>
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      dragRef.current = {
+        mode: "resize",
+        edge,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: crop.x,
+        originY: crop.y,
+        originW: crop.w,
+        originH: crop.h,
+      };
+    };
 
   const handleApply = () => {
     const img = new window.Image();
@@ -1359,7 +1480,64 @@ function CropOverlay({
               touchAction: "none",
               background: "transparent",
             }}
-          />
+          >
+            <div
+              onPointerDown={createResizePointerDown("top")}
+              style={{
+                position: "absolute",
+                top: -6,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 40,
+                height: 12,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.85)",
+                cursor: "ns-resize",
+              }}
+            />
+            <div
+              onPointerDown={createResizePointerDown("bottom")}
+              style={{
+                position: "absolute",
+                bottom: -6,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 40,
+                height: 12,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.85)",
+                cursor: "ns-resize",
+              }}
+            />
+            <div
+              onPointerDown={createResizePointerDown("left")}
+              style={{
+                position: "absolute",
+                left: -6,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 12,
+                height: 40,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.85)",
+                cursor: "ew-resize",
+              }}
+            />
+            <div
+              onPointerDown={createResizePointerDown("right")}
+              style={{
+                position: "absolute",
+                right: -6,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 12,
+                height: 40,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.85)",
+                cursor: "ew-resize",
+              }}
+            />
+          </div>
         </div>
 
         <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>
