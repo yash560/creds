@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Download } from 'lucide-react';
 import type { CardItem } from '@/lib/types';
 import CopyButton from '../CopyButton';
 import Tooltip from '../Tooltip';
@@ -87,6 +87,17 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
   const [showPin, setShowPin] = useState(false);
   const { cardNumber = '', cardholderName = '', expiry = '', cvv = '', pin = '', notes = '', cardType } = item.fields;
   const brand = cardType || detectCardBrand(cardNumber);
+  const attachments = item.attachments ?? [];
+  const frontAttachment = attachments.find((att) => att.side === 'front');
+  const backAttachment = attachments.find((att) => att.side === 'back');
+
+  const downloadAttachment = (att: { data: string; fileName?: string }) => {
+    if (!att || !att.data) return;
+    const anchor = document.createElement('a');
+    anchor.href = att.data;
+    anchor.download = att.fileName || item.title;
+    anchor.click();
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -119,6 +130,61 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
             alt=""
             style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}
           />
+        </div>
+      )}
+
+      {(frontAttachment || backAttachment) && (
+        <div>
+          <div className="form-label">Card images</div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {[{ att: frontAttachment, label: 'Front' }, { att: backAttachment, label: 'Back' }]
+              .filter((entry) => entry.att)
+              .map(({ att, label }) => (
+                <div
+                  key={att!.id}
+                  className="glass-card"
+                  style={{
+                    padding: 0,
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <img
+                    src={att!.data}
+                    alt={`${label} of card`}
+                    style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }}
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 10px',
+                      gap: 10,
+                      borderTop: '1px solid var(--border-subtle)',
+                    }}
+                  >
+                    <span style={{ fontSize: 13 }}>{att!.name || label}</span>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ height: 28, padding: '0 10px', fontSize: 11, gap: 6 }}
+                      onClick={() => downloadAttachment(att!)}
+                    >
+                      <Download size={12} /> Download
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       )}
 

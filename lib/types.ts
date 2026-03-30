@@ -16,6 +16,7 @@ export interface Attachment {
   name?: string;
   publicId?: string;
   resourceType?: string;
+  side?: 'front' | 'back';
 }
 
 // ─── Vault Item ────────────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ export interface VaultItem {
   fileName?: string;
   fileMimeType?: string;
   /** Multiple attachments (new) */
-  attachments?: Attachment[];
+  attachments?: Attachment[] | null
   dedupeKey?: string;
   isFavourite?: boolean;
   createdAt: string;

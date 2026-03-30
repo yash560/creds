@@ -8,14 +8,10 @@ import {
   ReactNode,
   useCallback,
 } from "react";
-import type {
-  VaultItem,
-  Folder,
-  FamilyMember,
-  Attachment,
-} from "@/lib/types";
+import type { VaultItem, Folder, FamilyMember, Attachment } from "@/lib/types";
 import { useAuth } from "./AuthContext";
 import { getEncryptedCache, setEncryptedCache } from "@/lib/crypto-vault";
+import { normalizeAttachments } from "@/lib/attachments";
 
 interface VaultContextValue {
   items: VaultItem[];
@@ -84,14 +80,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   );
 
   const getAttachmentName = useCallback(
-    (att: Partial<Attachment | { fileName?: string; label?: string; name?: string }>) =>
-      att.name || att.fileName || att.label || "attachment",
+    (
+      att: Partial<
+        Attachment | { fileName?: string; label?: string; name?: string }
+      >,
+    ) => att.name || att.fileName || att.label || "attachment",
     [],
   );
 
   const preparePayload = useCallback(
     async (payload: Partial<VaultItem>) => {
-      let attachments = payload.attachments;
+      let attachments = normalizeAttachments(payload.attachments);
       if (attachments?.length) {
         attachments = await Promise.all(
           attachments.map(async (att) => {
@@ -115,7 +114,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
       const prepared: Partial<VaultItem> = {
         ...payload,
-        attachments,
+        attachments: attachments?.filter((a): a is Attachment => !!a.id),
       };
 
       if (

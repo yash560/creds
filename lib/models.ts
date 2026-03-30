@@ -73,6 +73,7 @@ const ItemSchema = new Schema<IItem>(
       label: { type: String },
       publicId: { type: String },
       resourceType: { type: String },
+      side: { type: String, enum: ['front', 'back'] },
     }],
     dedupeKey: { type: String, index: true },
     isFavourite: { type: Boolean, default: false },

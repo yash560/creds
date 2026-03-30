@@ -4,6 +4,7 @@ import { ItemModel } from '@/lib/models';
 import { encryptFields, decryptFields } from '@/lib/crypto';
 import { getSession } from '@/lib/session';
 import { deleteCloudinaryAsset, resolveResourceType } from '@/lib/cloudinary';
+import { normalizeAttachments } from '@/lib/attachments';
 
 async function getAuthedItem(id: string) {
   const session = await getSession();
@@ -69,7 +70,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (body.fileMimeType !== undefined) update.fileMimeType = body.fileMimeType;
   if (body.filePublicId !== undefined) update.filePublicId = body.filePublicId;
   if (body.fileResourceType !== undefined) update.fileResourceType = body.fileResourceType;
-  if (body.attachments !== undefined) update.attachments = body.attachments;
+  if (body.attachments !== undefined) update.attachments = normalizeAttachments(body.attachments);
   if (body.isFavourite !== undefined) update.isFavourite = body.isFavourite;
 
   const updated = await ItemModel.findOneAndUpdate({ _id: id, userId: session.userId }, update, { new: true }).lean();

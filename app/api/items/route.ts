@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/mongodb';
 import { ItemModel } from '@/lib/models';
 import { encryptFields, decryptFields } from '@/lib/crypto';
 import { getSession } from '@/lib/session';
+import { normalizeAttachments } from '@/lib/attachments';
 import crypto from 'crypto';
 
 async function auth() {
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       tags: tags || [],
       folderId: folderId || null,
       fields: encrypted,
-      attachments: attachments || [],
+      attachments: normalizeAttachments(attachments) || [],
       fileData,
       filePublicId,
       fileResourceType,

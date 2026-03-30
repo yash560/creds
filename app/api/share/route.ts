@@ -75,7 +75,9 @@ export async function POST(req: NextRequest) {
         expiresAt: expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000) : undefined,
     });
 
-    const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/share/${linkId}`;
+    const origin =
+        req.nextUrl?.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const shareUrl = `${origin}/share/${linkId}`;
 
     return NextResponse.json({
         ok: true,
