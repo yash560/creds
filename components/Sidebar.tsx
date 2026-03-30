@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   LayoutDashboard, KeyRound, CreditCard, FileText,
   Users, FolderOpen, ScanLine, Settings,
-  Shield, ChevronLeft, ChevronRight, Lock
+  Shield, ChevronLeft, ChevronRight, Lock, CircleHelp,
 } from 'lucide-react';
+import HelpGuideModal from './HelpGuideModal';
 import { useAuth } from '@/context/AuthContext';
 import Tooltip from './Tooltip';
 
@@ -33,6 +35,7 @@ const SETTINGS_NAV = [
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { lock, vaultName } = useAuth();
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -83,7 +86,19 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <Tooltip label="Lock vault">
+        <Tooltip label={collapsed ? 'How to use' : ''}>
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="nav-item"
+            style={{ width: '100%', background: 'none', border: 'none', justifyContent: collapsed ? 'center' : undefined, cursor: 'pointer', color: 'var(--accent-cyan)' }}
+          >
+            <CircleHelp size={18} className="nav-icon" />
+            {!collapsed && <span>How to use</span>}
+          </button>
+        </Tooltip>
+
+        <Tooltip label={collapsed ? 'Lock vault' : ''}>
           <button
             onClick={() => lock()}
             className="nav-item"
@@ -94,7 +109,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </button>
         </Tooltip>
 
-        <Tooltip label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <Tooltip label={collapsed ? 'Expand sidebar' : ''}>
           <button
             onClick={onToggle}
             className="nav-item"
@@ -107,6 +122,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </button>
         </Tooltip>
       </div>
+
+      <HelpGuideModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </aside>
   );
 }

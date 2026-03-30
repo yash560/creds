@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, KeyRound } from 'lucide-react';
+import { Plus, KeyRound, Download } from 'lucide-react';
+import ImportPasswordsModal from '@/components/ImportPasswordsModal';
+import type { ChromePasswordRow } from '@/lib/chrome-password-csv';
 import { useVault } from '@/context/VaultContext';
 import ItemCard from '@/components/ItemCard';
 import AddItemModal from '@/components/AddItemModal';
@@ -10,9 +12,21 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
 import type { VaultItem } from '@/lib/types';
 
+function titleFromChromeRow(row: ChromePasswordRow): string {
+  const n = row.name.trim();
+  if (n) return n;
+  try {
+    const u = new URL(row.url.includes('://') ? row.url : `https://${row.url}`);
+    return u.hostname.replace(/^www\./, '');
+  } catch {
+    return row.url.trim() || 'Imported login';
+  }
+}
+
 export default function PasswordsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, searchQuery } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, searchQuery, refresh } = useVault();
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -38,7 +52,10 @@ export default function PasswordsPage() {
           </div>
           <p className="page-subtitle">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Password</button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}><Download size={15} /> Import from Chrome</button>
+          <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Password</button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 20 }}>
@@ -54,7 +71,10 @@ export default function PasswordsPage() {
               <div className="empty-icon">🔑</div>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>No passwords yet</h3>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Store your logins securely</p>
-              <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Password</button>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}><Download size={14} /> Import from Chrome</button>
+                <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Password</button>
+              </div>
             </div>
           ) : (
             <div className="item-grid">
@@ -67,8 +87,28 @@ export default function PasswordsPage() {
       </div>
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add password">+</button>
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="password" folders={folders} onSave={(p) => addItem(p)} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={(p) => updateItem(editItem!._id, p)} />
+      <ImportPasswordsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        items={items}
+        onImported={() => { void refresh(); }}
+        importRow={async (row) => {
+          await addItem({
+            type: 'password',
+            title: titleFromChromeRow(row),
+            tags: ['imported', 'chrome'],
+            folderId: null,
+            fields: {
+              username: row.username,
+              password: row.password,
+              url: row.url,
+              notes: '',
+            },
+          });
+        }}
+      />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="password" folders={folders} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this password permanently?" />
     </>

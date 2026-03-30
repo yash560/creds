@@ -53,6 +53,17 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
         </div>
       </div>
 
+      {item.fileData && item.fileMimeType?.startsWith('image/') && (
+        <div>
+          <div className="form-label">Card photo</div>
+          <img
+            src={item.fileData}
+            alt=""
+            style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}
+          />
+        </div>
+      )}
+
       {/* Fields */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {/* Card Number */}

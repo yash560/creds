@@ -33,7 +33,7 @@ export default function ScanPage() {
             <div className="item-type-icon icon-scan" style={{ width: 36, height: 36 }}><ScanLine size={17} /></div>
             <h1 className="page-title">Scan & Upload</h1>
           </div>
-          <p className="page-subtitle">Camera captures and uploaded document images</p>
+          <p className="page-subtitle">Use live camera or upload images and PDFs when adding a scan</p>
         </div>
         <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Scan</button>
       </div>
@@ -55,7 +55,7 @@ export default function ScanPage() {
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add scan">📷</button>
       <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="scan" folders={folders} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={(p) => updateItem(editItem!._id, p)} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} />
     </>

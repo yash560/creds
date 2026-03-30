@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ScanLine } from 'lucide-react';
 import type { VaultItem, ItemType } from '@/lib/types';
+import { recognizeCardImage } from '@/lib/card-image-ocr';
+import { suggestCardTitleFromPan } from '@/lib/card-ocr-parse';
 import Modal from './Modal';
 import ScanUploader from './sections/ScanUploader';
 
@@ -27,6 +30,15 @@ export default function AddItemModal({ open, onClose, onSave, initialType = 'pas
   const [fileName, setFileName] = useState(existing?.fileName ?? '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrHint, setOcrHint] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setOcrBusy(false);
+      setOcrHint('');
+    }
+  }, [open]);
 
   const setField = (key: string, val: string) => setFields(prev => ({ ...prev, [key]: val }));
 
@@ -121,13 +133,85 @@ export default function AddItemModal({ open, onClose, onSave, initialType = 'pas
 
         {type === 'card' && (
           <>
+            <div>
+              <div className="form-label">Card photo (optional)</div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                Photograph the card (front for number &amp; expiry; back or labeled area for CVV). OCR runs only in your browser.
+              </p>
+              <ScanUploader
+                value={fileData}
+                mimeType={fileMime}
+                fileName={fileName}
+                onChange={(d, m, n) => { setFileData(d); setFileMime(m); setFileName(n); setOcrHint(''); }}
+                onClear={() => { setFileData(''); setFileMime(''); setFileName(''); setOcrHint(''); }}
+              />
+              {fileData && fileMime.startsWith('image/') && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ marginTop: 12, width: '100%', justifyContent: 'center', gap: 8 }}
+                  disabled={ocrBusy || loading}
+                  onClick={async () => {
+                    setOcrBusy(true);
+                    setOcrHint('');
+                    try {
+                      const { parsed } = await recognizeCardImage(fileData);
+                      const filled: string[] = [];
+                      if (parsed.cardNumber) filled.push('number');
+                      if (parsed.expiry) filled.push('expiry');
+                      if (parsed.cvv) filled.push('CVV');
+                      setFields((prev) => ({
+                        ...prev,
+                        ...(parsed.cardNumber && { cardNumber: parsed.cardNumber }),
+                        ...(parsed.expiry && { expiry: parsed.expiry }),
+                        ...(parsed.cvv && { cvv: parsed.cvv }),
+                      }));
+                      if (parsed.cardNumber && !title.trim()) {
+                        setTitle(suggestCardTitleFromPan(parsed.cardNumber));
+                      }
+                      const missing: string[] = [];
+                      if (!parsed.cardNumber) missing.push('card number (needs clear PAN + Luhn check)');
+                      if (!parsed.expiry) missing.push('expiry');
+                      if (!parsed.cvv) {
+                        missing.push('CVV (only if the image shows “CVV” / “CVC” — usually on the back)');
+                      }
+                      if (filled.length === 0) {
+                        setOcrHint('Could not read a valid card number. Use a sharp, well-lit photo; avoid glare.');
+                      } else {
+                        setOcrHint(
+                          `Filled: ${filled.join(', ')}.${missing.length ? ` Not detected: ${missing.join('; ')}.` : ''}`
+                        );
+                      }
+                    } catch {
+                      setOcrHint('OCR failed to load or read the image. Check your network (first run downloads language data) and try again.');
+                    } finally {
+                      setOcrBusy(false);
+                    }
+                  }}
+                >
+                  {ocrBusy ? (
+                    'Reading image…'
+                  ) : (
+                    <>
+                      <ScanLine size={16} /> Read number, expiry &amp; CVV from image
+                    </>
+                  )}
+                </button>
+              )}
+              {ocrHint && (
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 10, lineHeight: 1.5 }}>
+                  {ocrHint}
+                </p>
+              )}
+            </div>
+
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Cardholder Name</label>
               <input className="form-input" value={fields.cardholderName || ''} onChange={e => setField('cardholderName', e.target.value)} placeholder="YASH JAIN" />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Card Number *</label>
-              <input className={`form-input mono ${errors.cardNumber ? 'border-red-500' : ''}`} value={fields.cardNumber || ''} onChange={e => setField('cardNumber', e.target.value.replace(/\D/g,''))} placeholder="4111 1111 1111 1111" maxLength={19} />
+              <input className={`form-input mono ${errors.cardNumber ? 'border-red-500' : ''}`} value={fields.cardNumber || ''} onChange={e => setField('cardNumber', e.target.value.replace(/\D/g, ''))} placeholder="4111 1111 1111 1111" maxLength={19} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="form-group" style={{ marginBottom: 0 }}>

@@ -2,52 +2,50 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ItemModel } from '@/lib/models';
 import { encryptFields, decryptFields } from '@/lib/crypto';
-import { cookies } from 'next/headers';
+import { getSession } from '@/lib/session';
 
-function isUnlocked() {
-  const cookieStore = cookies();
-  return (cookieStore as unknown as { get: (name: string) => { value: string } | undefined }).get('vault_session')?.value === 'unlocked';
+async function getAuthedItem(id: string) {
+  const session = await getSession();
+  if (!session) return { session: null, item: null };
+  await connectDB();
+  const item = await ItemModel.findOne({ _id: id, userId: session.userId }).lean();
+  return { session, item };
 }
 
-// GET /api/items/[id]
 export async function GET(_: NextRequest, props: { params: Promise<{ id: string }> }) {
-  if (!isUnlocked()) return NextResponse.json({ ok: false, error: 'Locked' }, { status: 401 });
   const { id } = await props.params;
-  await connectDB();
-  const item = await ItemModel.findById(id).lean();
+  const { session, item } = await getAuthedItem(id);
+  if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   if (!item) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   const raw = item.fields instanceof Map ? Object.fromEntries(item.fields) : (item.fields as Record<string, string>);
-  const decryptedFields = await decryptFields(raw);
-  return NextResponse.json({ ok: true, data: { ...item, _id: item._id!.toString(), fields: decryptedFields } });
+  return NextResponse.json({ ok: true, data: { ...item, _id: item._id!.toString(), fields: await decryptFields(raw) } });
 }
 
-// PUT /api/items/[id]
 export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
-  if (!isUnlocked()) return NextResponse.json({ ok: false, error: 'Locked' }, { status: 401 });
   const { id } = await props.params;
+  const session = await getSession();
+  if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await connectDB();
   const body = await req.json();
-  const { title, tags, folderId, fields, fileData, fileName, fileMimeType, isFavourite } = body;
   const update: Record<string, unknown> = {};
-  if (title !== undefined) update.title = title;
-  if (tags !== undefined) update.tags = tags;
-  if (folderId !== undefined) update.folderId = folderId;
-  if (fields !== undefined) update.fields = await encryptFields(fields);
-  if (fileData !== undefined) update.fileData = fileData;
-  if (fileName !== undefined) update.fileName = fileName;
-  if (fileMimeType !== undefined) update.fileMimeType = fileMimeType;
-  if (isFavourite !== undefined) update.isFavourite = isFavourite;
-
-  const updated = await ItemModel.findByIdAndUpdate(id, update, { new: true }).lean();
+  if (body.title !== undefined) update.title = body.title;
+  if (body.tags !== undefined) update.tags = body.tags;
+  if (body.folderId !== undefined) update.folderId = body.folderId;
+  if (body.fields !== undefined) update.fields = await encryptFields(body.fields);
+  if (body.fileData !== undefined) update.fileData = body.fileData;
+  if (body.fileName !== undefined) update.fileName = body.fileName;
+  if (body.fileMimeType !== undefined) update.fileMimeType = body.fileMimeType;
+  if (body.isFavourite !== undefined) update.isFavourite = body.isFavourite;
+  const updated = await ItemModel.findOneAndUpdate({ _id: id, userId: session.userId }, update, { new: true }).lean();
   if (!updated) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   return NextResponse.json({ ok: true, data: { ...updated, _id: updated._id!.toString() } });
 }
 
-// DELETE /api/items/[id]
 export async function DELETE(_: NextRequest, props: { params: Promise<{ id: string }> }) {
-  if (!isUnlocked()) return NextResponse.json({ ok: false, error: 'Locked' }, { status: 401 });
   const { id } = await props.params;
+  const session = await getSession();
+  if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  await ItemModel.findByIdAndDelete(id);
+  await ItemModel.findOneAndDelete({ _id: id, userId: session.userId });
   return NextResponse.json({ ok: true });
 }

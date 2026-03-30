@@ -1,26 +1,34 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-// ─── VaultConfig ──────────────────────────────────────────────────────────────
+// ─── User ─────────────────────────────────────────────────────────────────────
 
-interface IVaultConfig {
-  masterPinHash: string;
+export interface IUser {
+  _id: Types.ObjectId;
+  email: string;
+  passwordHash: string;       // bcrypt of full password
+  pinHash: string | null;     // bcrypt of 4-digit quick PIN
   vaultName: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const VaultConfigSchema = new Schema<IVaultConfig>({
-  masterPinHash: { type: String, required: true },
-  vaultName: { type: String, default: 'My Vault' },
-  createdAt: { type: Date, default: Date.now },
-});
+const UserSchema = new Schema<IUser>(
+  {
+    email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    pinHash:      { type: String, default: null },
+    vaultName:    { type: String, default: 'My Vault' },
+  },
+  { timestamps: true }
+);
 
-export const VaultConfigModel: Model<IVaultConfig> =
-  mongoose.models.VaultConfig ||
-  mongoose.model<IVaultConfig>('VaultConfig', VaultConfigSchema);
+export const UserModel: Model<IUser> =
+  mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 // ─── Item ─────────────────────────────────────────────────────────────────────
 
 interface IItem {
+  userId: string;   // owner
   type: string;
   title: string;
   tags: string[];
@@ -36,15 +44,16 @@ interface IItem {
 
 const ItemSchema = new Schema<IItem>(
   {
-    type: { type: String, required: true },
-    title: { type: String, required: true },
-    tags: [{ type: String }],
-    folderId: { type: String, default: null },
-    fields: { type: Map, of: String, default: {} },
-    fileData: { type: String },
-    fileName: { type: String },
+    userId:       { type: String, required: true, index: true },
+    type:         { type: String, required: true },
+    title:        { type: String, required: true },
+    tags:         [{ type: String }],
+    folderId:     { type: String, default: null },
+    fields:       { type: Map, of: String, default: {} },
+    fileData:     { type: String },
+    fileName:     { type: String },
     fileMimeType: { type: String },
-    isFavourite: { type: Boolean, default: false },
+    isFavourite:  { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -55,6 +64,7 @@ export const ItemModel: Model<IItem> =
 // ─── Folder ───────────────────────────────────────────────────────────────────
 
 interface IFolder {
+  userId: string;
   name: string;
   parentId: string | null;
   path: string[];
@@ -63,11 +73,12 @@ interface IFolder {
 }
 
 const FolderSchema = new Schema<IFolder>({
-  name: { type: String, required: true },
+  userId:   { type: String, required: true, index: true },
+  name:     { type: String, required: true },
   parentId: { type: String, default: null },
-  path: [{ type: String }],
-  icon: { type: String },
-  createdAt: { type: Date, default: Date.now },
+  path:     [{ type: String }],
+  icon:     { type: String },
+  createdAt:{ type: Date, default: Date.now },
 });
 
 export const FolderModel: Model<IFolder> =
@@ -76,6 +87,7 @@ export const FolderModel: Model<IFolder> =
 // ─── FamilyMember ─────────────────────────────────────────────────────────────
 
 interface IFamilyMember {
+  userId: string;
   name: string;
   emoji: string;
   role: string;
@@ -84,11 +96,12 @@ interface IFamilyMember {
 }
 
 const FamilyMemberSchema = new Schema<IFamilyMember>({
-  name: { type: String, required: true },
-  emoji: { type: String, default: '👤' },
-  role: { type: String, default: 'viewer' },
+  userId:      { type: String, required: true, index: true },
+  name:        { type: String, required: true },
+  emoji:       { type: String, default: '👤' },
+  role:        { type: String, default: 'viewer' },
   permissions: [{ type: String }],
-  createdAt: { type: Date, default: Date.now },
+  createdAt:   { type: Date, default: Date.now },
 });
 
 export const FamilyMemberModel: Model<IFamilyMember> =

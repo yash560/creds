@@ -13,7 +13,7 @@ function getKeyMaterial(secret: string): Uint8Array {
 }
 
 async function deriveKey(secret: string): Promise<CryptoKey> {
-  const keyData = getKeyMaterial(secret);
+  const keyData = Buffer.from(getKeyMaterial(secret));
   return crypto.subtle.importKey('raw', keyData, { name: ALGORITHM }, false, [
     'encrypt',
     'decrypt',

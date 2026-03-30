@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
+import { COOKIE_NAME } from '@/lib/session';
 
-// POST /api/auth/lock — clear session cookie
 export async function POST() {
   const response = NextResponse.json({ ok: true });
-  response.cookies.set('vault_session', '', { maxAge: 0, path: '/' });
+  response.cookies.set(COOKIE_NAME, '', { maxAge: 0, path: '/' });
   return response;
 }

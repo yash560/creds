@@ -54,8 +54,8 @@ export default function CardsPage() {
       )}
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add card">+</button>
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="card" folders={folders} onSave={(p) => addItem(p)} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={(p) => updateItem(editItem!._id, p)} />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="card" folders={folders} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this card permanently?" />
     </>

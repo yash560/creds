@@ -510,23 +510,8 @@ body {
 .input-with-action .form-input { flex: 1; }
 
 /* ─── Tooltip ────────────────────────────────────────────────────────────────── */
-.tooltip-wrap { position: relative; display: inline-flex; }
-.tooltip-label {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%; transform: translateX(-50%);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  font-size: 12px; font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0; transition: opacity 0.15s ease;
-  z-index: 999;
-}
-.tooltip-wrap:hover .tooltip-label { opacity: 1; }
+/* Labels render in a fixed-position portal (see Tooltip.tsx). Wrapper is inline-flex for sizing only. */
+.tooltip-wrap { position: relative; max-width: 100%; }
 
 /* ─── Role Badge ─────────────────────────────────────────────────────────────── */
 .role-badge {
@@ -679,6 +664,40 @@ body {
   font-size: 13px; font-weight: 500;
   z-index: 9999;
   animation: slideUp 0.2s ease, fadeIn 0.2s ease;
+}
+
+/* ─── Auth Pages ─────────────────────────────────────────────────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, var(--bg-base) 60%);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 36px 32px;
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(99,102,241,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.alert-error {
+  background: rgba(244,63,94,0.1);
+  border: 1px solid rgba(244,63,94,0.25);
+  color: var(--accent-rose);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 /* ─── Mobile Bottom Nav ──────────────────────────────────────────────────────── */

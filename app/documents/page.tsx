@@ -77,8 +77,8 @@ export default function DocumentsPage() {
       </div>
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add document">+</button>
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="document" folders={folders} onSave={(p) => addItem(p)} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={(p) => updateItem(editItem!._id, p)} />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="document" folders={folders} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this document permanently?" />
     </>
