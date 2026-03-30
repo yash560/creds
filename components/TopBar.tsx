@@ -13,7 +13,7 @@ interface TopBarProps {
 
 export default function TopBar({ collapsed }: TopBarProps) {
   const { searchQuery, setSearchQuery } = useVault();
-  const { lock, vaultName, user } = useAuth();
+  const { lock, signOut, vaultName, user } = useAuth();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [localQ, setLocalQ] = useState(searchQuery);
@@ -53,7 +53,7 @@ export default function TopBar({ collapsed }: TopBarProps) {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/lock", { method: "POST" });
+    await signOut();
     router.push("/");
     setDropdownOpen(false);
   };

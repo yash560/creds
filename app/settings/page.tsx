@@ -19,7 +19,30 @@ export default function SettingsPage() {
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('👤');
   const [role, setRole] = useState<Role>('viewer');
-  
+
+  const handleSyncContacts = async () => {
+    const contactsManager = (navigator as any).contacts;
+    if (!contactsManager || typeof contactsManager.select !== 'function') {
+      alert('Contact picking is not supported on this device/browser.');
+      return;
+    }
+
+    try {
+      const props = ['name', 'email'];
+      const opts = { multiple: true };
+      const contacts = await contactsManager.select(props, opts);
+      if (contacts.length > 0) {
+        for (const contact of contacts) {
+          const contactName = Array.isArray(contact.name) ? contact.name[0] : contact.name;
+          if (!contactName) continue;
+          await addMember({ name: contactName, role: 'viewer' });
+        }
+      }
+    } catch (err) {
+      console.error('Contact picker failed', err);
+      alert('Failed to pick contacts. Please try again.');
+    }
+  };
   const EMOJIS = ['👤','👨','👩','👴','👵','👦','👧','🧑','👨‍💼','👩‍💼'];
 
   const handleExport = async () => {
@@ -86,25 +109,7 @@ export default function SettingsPage() {
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Manage who has access to your vault</p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-ghost" onClick={async () => {
-              if ('contacts' in navigator && 'ContactsManager' in window) {
-                try {
-                  const props = ['name', 'email'];
-                  const opts = { multiple: true };
-                  // @ts-expect-error - Contacts API is not in standard TS types yet
-                  const contacts = await navigator.contacts.select(props, opts);
-                  if (contacts.length > 0) {
-                    for (const contact of contacts) {
-                      await addMember({ name: contact.name[0], role: 'viewer' });
-                    }
-                  }
-                } catch (err) {
-                  console.error('Contact picker failed', err);
-                }
-              } else {
-                alert('Contact picking is not supported on this device/browser.');
-              }
-            }}>
+            <button className="btn btn-ghost" onClick={handleSyncContacts}>
               Sync Contacts
             </button>
             <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Member</button>

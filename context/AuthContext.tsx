@@ -300,6 +300,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  const signOut = useCallback(async () => {
+    try {
+      await fetch("/api/auth/lock", { method: "POST" });
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    }
+    setUser(null);
+    setCryptoKey(null);
+    clearEncryptedCache();
+    clearSessionLocally();
+    setStep("signin");
+    try {
+      const res = await fetch("/api/auth/verify");
+      const data = await res.json();
+      setHasUsers(!!data.hasUsers);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const goToRegister = useCallback(() => {
     setError("");
     setStep("register");
@@ -326,6 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setupPin,
         skipPin,
         lock,
+        signOut,
         goToRegister,
         goToSignIn,
         clearError: () => setError(""),
