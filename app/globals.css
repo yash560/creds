@@ -358,6 +358,99 @@ body {
 }
 .item-card:hover .item-card-actions { opacity: 1; }
 
+.card-summary {
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+}
+.card-summary-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 18px;
+  background: rgba(245,158,11,0.15); color: var(--accent-amber);
+}
+.card-preview {
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #0d1b3a, #21134a 50%, #0d1b3a 100%);
+  position: relative;
+  margin-bottom: 12px;
+  overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card-preview.visa { background: linear-gradient(135deg, #0d47a1, #1565c0, #0d47a1); }
+.card-preview.mastercard { background: linear-gradient(135deg, #b71c1c, #880e4f, #4a148c); }
+.card-preview.amex { background: linear-gradient(135deg, #006064, #00838f, #006064); }
+.card-preview.discover { background: linear-gradient(135deg, #bf360c, #e64a19, #f57c00); }
+.card-preview.rupay { background: linear-gradient(135deg, #0d2137, #1a3a5c, #0d3349); }
+.card-preview.maestro { background: linear-gradient(135deg, #1a237e, #283593, #1565c0); }
+.card-preview.default { background: linear-gradient(135deg, #1a1f35, #2d1b69, #1a1f35); }
+.card-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.15), transparent 55%);
+  pointer-events: none;
+}
+.card-preview-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-preview-chip {
+  width: 34px; height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #fdd835, #fbbc04);
+}
+.card-preview-brand {
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.card-preview-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  letter-spacing: 0.18em;
+}
+.card-preview-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-preview-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.7);
+}
+.card-preview-value {
+  font-size: 12px;
+  font-weight: 600;
+}
+.card-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-detail-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+}
+.card-detail-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.card-detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .action-btn {
   width: 28px; height: 28px;
   border-radius: 6px;
@@ -558,6 +651,55 @@ body {
   display: flex; gap: 8px;
 }
 .input-with-action .form-input { flex: 1; }
+.input-with-action--stacked {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.input-with-action--stacked .action-btn,
+.input-with-action--stacked > button {
+  flex-shrink: 0;
+}
+
+.password-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.password-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.password-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.password-strength {
+  margin-top: 10px;
+}
+.password-detail-grid .form-label {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .input-with-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .input-with-action .form-input {
+    width: 100%;
+  }
+  .input-with-action--stacked .action-btn,
+  .input-with-action--stacked > button {
+    width: 100%;
+    justify-content: center;
+  }
+}
 
 /* ─── Tooltip ────────────────────────────────────────────────────────────────── */
 /* Labels render in a fixed-position portal (see Tooltip.tsx). Wrapper is inline-flex for sizing only. */

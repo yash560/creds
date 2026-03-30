@@ -29,58 +29,74 @@ export default function PasswordDetailView({ item, onEdit, onDelete }: PasswordC
   const [showPwd, setShowPwd] = useState(false);
   const strength = strengthScore(item.fields.password || '');
 
+  const renderField = (label: string, value: React.ReactNode, actions?: React.ReactNode) => (
+    <div className="password-field">
+      <div className="form-label">{label}</div>
+      <div className="input-with-action input-with-action--stacked">
+        <div className="form-input" style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          {value}
+        </div>
+        {actions}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Username */}
-      <div>
-        <div className="form-label">Username / Email</div>
-        <div className="input-with-action">
-          <div className="form-input" style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            {item.fields.username || <span style={{ color: 'var(--text-muted)' }}>—</span>}
-          </div>
-          {item.fields.username && <CopyButton value={item.fields.username} label="Copy username" />}
-        </div>
-      </div>
-
-      {/* Password */}
-      <div>
-        <div className="form-label">Password</div>
-        <div className="input-with-action">
-          <div className="form-input mono" style={{ flex: 1, display: 'flex', alignItems: 'center', letterSpacing: showPwd ? '0.05em' : '0.2em' }}>
-            {showPwd ? item.fields.password : '•'.repeat(Math.min(item.fields.password?.length || 0, 16))}
-          </div>
-          <Tooltip label={showPwd ? 'Hide' : 'Show'}>
-            <button className="action-btn" onClick={() => setShowPwd((p) => !p)} aria-label="Toggle password visibility">
-              {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          </Tooltip>
-          {item.fields.password && <CopyButton value={item.fields.password} label="Copy password" />}
-        </div>
-
-        {/* Strength meter */}
-        {item.fields.password && (
-          <div style={{ marginTop: 8 }}>
-            <div className="strength-bar">
-              <div
-                className="strength-fill"
-                style={{
-                  width: `${(strength / 5) * 100}%`,
-                  background: STRENGTH_COLORS[strength],
-                }}
-              />
-            </div>
-            <div style={{ fontSize: 11, color: STRENGTH_COLORS[strength], marginTop: 4 }}>
-              {STRENGTH_LABELS[strength]}
-            </div>
-          </div>
+    <div className="password-detail-grid">
+      <div className="password-panel">
+        {renderField(
+          'Username / Email',
+          item.fields.username || <span style={{ color: 'var(--text-muted)' }}>—</span>,
+          item.fields.username ? <CopyButton value={item.fields.username} label="Copy username" /> : null,
         )}
-      </div>
 
-      {/* URL */}
-      {item.fields.url && (
-        <div>
-          <div className="form-label">Website</div>
-          <div className="input-with-action">
+        <div className="password-field">
+          <div className="form-label">Password</div>
+          <div className="input-with-action input-with-action--stacked">
+            <div
+              className="form-input mono"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', letterSpacing: showPwd ? '0.05em' : '0.2em' }}
+            >
+              {showPwd
+                ? item.fields.password
+                : '•'.repeat(Math.min(item.fields.password?.length || 0, 16))}
+            </div>
+            <Tooltip label={showPwd ? 'Hide password' : 'Show password'}>
+              <button
+                className="action-btn"
+                onClick={() => setShowPwd((p) => !p)}
+                aria-label="Toggle password visibility"
+              >
+                {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </Tooltip>
+            {item.fields.password && (
+              <CopyButton value={item.fields.password} label="Copy password" />
+            )}
+          </div>
+
+          {/* Strength meter */}
+          {item.fields.password && (
+            <div className="password-strength">
+              <div className="strength-bar">
+                <div
+                  className="strength-fill"
+                  style={{
+                    width: `${(strength / 5) * 100}%`,
+                    background: STRENGTH_COLORS[strength],
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: 11, color: STRENGTH_COLORS[strength], marginTop: 4 }}>
+                {STRENGTH_LABELS[strength]}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {item.fields.url && renderField(
+          'Website',
+          (
             <a
               href={item.fields.url.startsWith('http') ? item.fields.url : `https://${item.fields.url}`}
               target="_blank"
@@ -90,20 +106,22 @@ export default function PasswordDetailView({ item, onEdit, onDelete }: PasswordC
             >
               {item.fields.url}
             </a>
-            <CopyButton value={item.fields.url} label="Copy URL" />
-          </div>
-        </div>
-      )}
+          ),
+          <CopyButton value={item.fields.url} label="Copy URL" />,
+        )}
 
-      {/* Notes */}
-      {item.fields.notes && (
-        <div>
-          <div className="form-label">Notes</div>
-          <div className="form-textarea" style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 14, whiteSpace: 'pre-wrap' }}>
-            {item.fields.notes}
+        {item.fields.notes && (
+          <div className="password-field">
+            <div className="form-label">Notes</div>
+            <div
+              className="form-textarea"
+              style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', fontSize: 14, whiteSpace: 'pre-wrap' }}
+            >
+              {item.fields.notes}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
