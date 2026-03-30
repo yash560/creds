@@ -31,14 +31,18 @@ export async function POST(req: NextRequest) {
     vaultName: vaultName?.trim() || 'My Vault',
   });
 
+  const sessionKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64');
+
   const token = createSessionCookie({
     userId: user._id.toString(),
     email: user.email,
     vaultName: user.vaultName,
+    sessionKey,
   });
 
   const response = NextResponse.json({
     ok: true,
+    sessionKey,
     user: { email: user.email, vaultName: user.vaultName, hasPinSet: false },
   }, { status: 201 });
   response.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);

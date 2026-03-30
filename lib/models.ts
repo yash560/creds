@@ -37,6 +37,13 @@ interface IItem {
   fileData?: string;
   fileName?: string;
   fileMimeType?: string;
+  attachments: {
+    data: string;
+    name: string;
+    mimeType: string;
+    label?: string;
+  }[];
+  dedupeKey?: string;
   isFavourite: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +60,13 @@ const ItemSchema = new Schema<IItem>(
     fileData:     { type: String },
     fileName:     { type: String },
     fileMimeType: { type: String },
+    attachments: [{
+      data: { type: String, required: true },
+      name: { type: String, required: true },
+      mimeType: { type: String, required: true },
+      label: { type: String },
+    }],
+    dedupeKey: { type: String, index: true },
     isFavourite:  { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -1,21 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Plus, Trash2, Pencil, Download } from 'lucide-react';
+import { Shield, Plus, Trash2, Pencil, Download, User, CheckCircle, Lock } from 'lucide-react';
 import { useVault } from '@/context/VaultContext';
+import { useAuth } from '@/context/AuthContext';
 import RoleBadge from '@/components/RoleBadge';
 import Modal from '@/components/Modal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { FamilyMember, Role } from '@/lib/types';
 
-export default function RolesPage() {
+export default function SettingsPage() {
+  const { user, cryptoKey } = useAuth();
   const { members, addMember, updateMember, deleteMember } = useVault();
+  
   const [addOpen, setAddOpen] = useState(false);
   const [editMember, setEditMember] = useState<FamilyMember | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('👤');
   const [role, setRole] = useState<Role>('viewer');
+  
   const EMOJIS = ['👤','👨','👩','👴','👵','👦','👧','🧑','👨‍💼','👩‍💼'];
 
   const handleExport = async () => {
@@ -39,6 +43,41 @@ export default function RolesPage() {
         </div>
       </div>
 
+      {/* My Account */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <User size={18} /> My Account
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+          <div>
+            <div className="form-label" style={{ marginBottom: 4 }}>Email Address</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>{user?.email}</div>
+          </div>
+          <div>
+            <div className="form-label" style={{ marginBottom: 4 }}>Vault Name</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>{user?.vaultName}</div>
+          </div>
+          <div>
+            <div className="form-label" style={{ marginBottom: 4 }}>Security Status</div>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 6, 
+              padding: '4px 10px', 
+              borderRadius: 20, 
+              background: cryptoKey ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+              color: cryptoKey ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+              fontSize: 12,
+              fontWeight: 600
+            }}>
+              {cryptoKey ? <Lock size={12} /> : <Shield size={12} />}
+              {cryptoKey ? 'End-to-End Encrypted' : 'Standard Security'}
+              {cryptoKey && <CheckCircle size={12} />}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Roles & Members */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -46,7 +85,30 @@ export default function RolesPage() {
             <h2 style={{ fontSize: 16, fontWeight: 600 }}>Family Members & Roles</h2>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>Manage who has access to your vault</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Member</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={async () => {
+              if ('contacts' in navigator && 'ContactsManager' in window) {
+                try {
+                  const props = ['name', 'email'];
+                  const opts = { multiple: true };
+                  // @ts-expect-error - Contacts API is not in standard TS types yet
+                  const contacts = await navigator.contacts.select(props, opts);
+                  if (contacts.length > 0) {
+                    for (const contact of contacts) {
+                      await addMember({ name: contact.name[0], role: 'viewer' });
+                    }
+                  }
+                } catch (err) {
+                  console.error('Contact picker failed', err);
+                }
+              } else {
+                alert('Contact picking is not supported on this device/browser.');
+              }
+            }}>
+              Sync Contacts
+            </button>
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Member</button>
+          </div>
         </div>
 
         {members.length === 0 ? (

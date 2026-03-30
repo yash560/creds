@@ -365,13 +365,25 @@ export default function LoginGate() {
 
   // ── Quick PIN unlock ──────────────────────────────────────────────────────────
   if (step === 'pin') {
-    const handleVerify = async () => {
-      if (pin.length < 4) return;
+    const handleVerify = async (p: string) => {
       setPinLoading(true);
       setPinError('');
-      try { await verifyPin(pin); }
-      catch { setPinError('Something went wrong'); }
-      finally { setPinLoading(false); setPin(''); }
+      try {
+        await verifyPin(p);
+      } catch {
+        setPinError('Something went wrong');
+      } finally {
+        setPinLoading(false);
+        setPin('');
+      }
+    };
+
+    // Auto-verify when 4 digits are reached
+    const onPinChange = (p: string) => {
+      setPin(p);
+      if (p.length === 4) {
+        handleVerify(p);
+      }
     };
 
     return (
@@ -382,10 +394,10 @@ export default function LoginGate() {
             Signed in as <strong style={{ color: 'var(--text-primary)' }}>{user?.email}</strong>
           </div>
           <PinPad
-            pin={pin} setPin={setPin}
+            pin={pin} setPin={onPinChange}
             title="Unlock Vault"
             subtitle="Enter your 4-digit PIN"
-            onSubmit={handleVerify}
+            onSubmit={() => handleVerify(pin)}
             loading={pinLoading}
             error={pinError || error}
             onBack={async () => { await fetch('/api/auth/lock', { method: 'POST' }); window.location.reload(); }}
@@ -397,15 +409,16 @@ export default function LoginGate() {
 
   // ── Set up PIN ────────────────────────────────────────────────────────────────
   if (step === 'setup-pin') {
-    const handleSetPin = async () => {
+    const handleSetPin = async (p: string, cp?: string) => {
       if (pinStep === 'enter') {
-        if (pin.length < 4) return;
+        if (p.length < 4) return;
         setConfirmPin('');
         setPinStep('confirm');
         return;
       }
       // confirm step
-      if (pin !== confirmPin) {
+      const finalCp = cp ?? confirmPin;
+      if (pin !== finalCp) {
         setPinError('PINs do not match — try again');
         setPin(''); setConfirmPin('');
         setPinStep('enter');
@@ -417,16 +430,23 @@ export default function LoginGate() {
       finally { setPinLoading(false); }
     };
 
+    const confirmAndSet = (cp: string) => {
+      setConfirmPin(cp);
+      if (cp.length === 4) {
+        handleSetPin(pin, cp);
+      }
+    };
+
     if (pinStep === 'confirm') {
       return (
         <div className="auth-page">
           <div className="auth-card" style={{ alignItems: 'center' }}>
             {logo}
             <PinPad
-              pin={confirmPin} setPin={setConfirmPin}
+              pin={confirmPin} setPin={confirmAndSet}
               title="Confirm PIN"
               subtitle="Re-enter your 4-digit PIN to confirm"
-              onSubmit={handleSetPin}
+              onSubmit={() => handleSetPin(pin, confirmPin)}
               loading={pinLoading}
               error={pinError}
               onBack={() => { setPinStep('enter'); setPin(''); setConfirmPin(''); setPinError(''); }}
@@ -445,7 +465,7 @@ export default function LoginGate() {
             pin={pin} setPin={setPin}
             title="Set Quick PIN"
             subtitle="Create a 4-digit PIN for quick access"
-            onSubmit={handleSetPin}
+            onSubmit={() => handleSetPin(pin)}
             loading={pinLoading}
             error={pinError || error}
             onSkip={skipPin}

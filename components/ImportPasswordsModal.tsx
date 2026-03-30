@@ -17,6 +17,7 @@ interface ImportPasswordsModalProps {
   items: VaultItem[];
   onImported: (count: number) => void;
   importRow: (row: ChromePasswordRow) => Promise<void>;
+  onBulkImport?: (rows: ChromePasswordRow[]) => Promise<void>;
 }
 
 export default function ImportPasswordsModal({
@@ -25,6 +26,7 @@ export default function ImportPasswordsModal({
   items,
   onImported,
   importRow,
+  onBulkImport,
 }: ImportPasswordsModalProps) {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,6 +36,10 @@ export default function ImportPasswordsModal({
     const set = new Set<string>();
     for (const it of items) {
       if (it.type !== 'password') continue;
+      if (it.dedupeKey) {
+        set.add(it.dedupeKey);
+        continue;
+      }
       const f = it.fields as Record<string, string>;
       const url = f.url || '';
       const user = f.username || '';
@@ -91,21 +97,26 @@ export default function ImportPasswordsModal({
     if (analysis.toImport.length === 0 || !analysis.parsedOk) return;
     setBusy(true);
     setLastError('');
-    let ok = 0;
     try {
-      for (const row of analysis.toImport) {
-        await importRow(row);
-        ok++;
+      if (onBulkImport) {
+        await onBulkImport(analysis.toImport);
+        onImported(analysis.toImport.length);
+      } else {
+        let ok = 0;
+        for (const row of analysis.toImport) {
+          await importRow(row);
+          ok++;
+        }
+        onImported(ok);
       }
-      onImported(ok);
       setText('');
-      onClose();
-    } catch {
+    } catch (err) {
+      console.error('Import error:', err);
       setLastError('Import failed partway. Check your connection and try again.');
     } finally {
       setBusy(false);
     }
-  }, [analysis, importRow, onClose, onImported]);
+  }, [analysis, importRow, onBulkImport, onImported]);
 
   return (
     <Modal

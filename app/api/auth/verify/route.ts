@@ -27,6 +27,7 @@ export async function GET() {
     ok: true,
     isLoggedIn: true,
     hasPinSet: !!user.pinHash,
+    sessionKey: session.sessionKey,
     user: {
       email: user.email,
       vaultName: user.vaultName,
@@ -55,14 +56,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid email or password' }, { status: 401 });
   }
 
+  const sessionKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64');
+
   const token = createSessionCookie({
     userId: user._id.toString(),
     email: user.email,
     vaultName: user.vaultName,
+    sessionKey,
   });
 
   const response = NextResponse.json({
     ok: true,
+    sessionKey, // Send to frontend for encryption
     user: {
       email: user.email,
       vaultName: user.vaultName,

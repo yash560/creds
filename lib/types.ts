@@ -5,6 +5,18 @@ export type Role = 'admin' | 'editor' | 'viewer';
 
 // ─── Vault Item ────────────────────────────────────────────────────────────────
 
+// ─── Attachment ───────────────────────────────────────────────────────────────
+
+export interface Attachment {
+  id: string;
+  data: string; // base64
+  label?: string; // e.g. "Front Side", "Back Side"
+  mimeType: string;
+  fileName: string;
+}
+
+// ─── Vault Item ────────────────────────────────────────────────────────────────
+
 export interface VaultItem {
   _id: string;
   type: ItemType;
@@ -13,10 +25,13 @@ export interface VaultItem {
   folderId: string | null;
   /** Fields are stored as plain strings (encrypted at rest in DB) */
   fields: Record<string, string>;
-  /** Base64-encoded image/file data */
+  /** Primary / Legacy single file */
   fileData?: string;
   fileName?: string;
   fileMimeType?: string;
+  /** Multiple attachments (new) */
+  attachments?: Attachment[];
+  dedupeKey?: string;
   isFavourite?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -49,8 +64,9 @@ export interface CardItem extends VaultItem {
 
 export interface DocumentItem extends VaultItem {
   type: 'document';
+  attachments: Attachment[];
   fields: {
-    category?: string; // aadhaar | passport | pan | vehicle | insurance | etc.
+    category?: string; // Aadhaar | PAN | Passport | etc.
     documentNumber?: string;
     issuedBy?: string;
     expiryDate?: string;

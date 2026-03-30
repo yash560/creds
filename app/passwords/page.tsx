@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Plus, KeyRound, Download } from 'lucide-react';
 import ImportPasswordsModal from '@/components/ImportPasswordsModal';
-import type { ChromePasswordRow } from '@/lib/chrome-password-csv';
+import { ChromePasswordRow, normalizeLoginKey } from '@/lib/chrome-password-csv';
 import { useVault } from '@/context/VaultContext';
 import ItemCard from '@/components/ItemCard';
 import AddItemModal from '@/components/AddItemModal';
@@ -24,7 +24,7 @@ function titleFromChromeRow(row: ChromePasswordRow): string {
 }
 
 export default function PasswordsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, searchQuery, refresh } = useVault();
+  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, searchQuery } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
@@ -34,13 +34,35 @@ export default function PasswordsPage() {
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'password');
-    if (folderId !== undefined) list = list.filter(i => i.folderId === folderId);
+    // If folderId is undefined, we show everything (global view).
+    // If it's null, we show items in the root (no folder).
+    // If it's a string, we show that specific folder.
+    if (folderId !== undefined) {
+      list = list.filter(i => i.folderId === folderId);
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(i => i.title.toLowerCase().includes(q) || i.tags?.some(t => t.toLowerCase().includes(q)));
     }
     return list;
   }, [items, folderId, searchQuery]);
+
+  const handleBulkImport = useCallback(async (rows: ChromePasswordRow[]) => {
+    const payloads = rows.map(row => ({
+      type: 'password' as const,
+      title: titleFromChromeRow(row),
+      tags: ['imported', 'chrome'],
+      folderId: null,
+      dedupeKey: normalizeLoginKey(row.url, row.username),
+      fields: {
+        username: row.username,
+        password: row.password,
+        url: row.url,
+        notes: '',
+      },
+    }));
+    await addItemsBulk(payloads);
+  }, [addItemsBulk]);
 
   return (
     <>
@@ -59,19 +81,17 @@ export default function PasswordsPage() {
       </div>
 
       <div style={{ display: 'flex', gap: 20 }}>
-        {/* Folder sidebar */}
-        <div style={{ width: 200, flexShrink: 0 }}>
+        <div style={{ width: 220, flexShrink: 0 }}>
           <FolderTree activeFolderId={folderId} onSelect={setFolderId} />
         </div>
 
-        {/* Cards */}
         <div style={{ flex: 1 }}>
           {filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔑</div>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>No passwords yet</h3>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Store your logins securely</p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 16 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}><Download size={14} /> Import from Chrome</button>
                 <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Password</button>
               </div>
@@ -79,7 +99,14 @@ export default function PasswordsPage() {
           ) : (
             <div className="item-grid">
               {filtered.map(item => (
-                <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                <ItemCard 
+                  key={item._id} 
+                  item={item} 
+                  onClick={setDetailItem} 
+                  onEdit={setEditItem} 
+                  onDelete={setDeleteId} 
+                  onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+                />
               ))}
             </div>
           )}
@@ -87,26 +114,18 @@ export default function PasswordsPage() {
       </div>
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add password">+</button>
+
       <ImportPasswordsModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
         items={items}
-        onImported={() => { void refresh(); }}
-        importRow={async (row) => {
-          await addItem({
-            type: 'password',
-            title: titleFromChromeRow(row),
-            tags: ['imported', 'chrome'],
-            folderId: null,
-            fields: {
-              username: row.username,
-              password: row.password,
-              url: row.url,
-              notes: '',
-            },
-          });
-        }}
+        onImported={(count) => { setImportOpen(false); }}
+        // We'll modify the modal to optionally use a bulk handler if provided,
+        // or just pass a dummy importRow since our new modal will use a specialized prop.
+        importRow={async () => {}} 
+        onBulkImport={handleBulkImport}
       />
+
       <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="password" folders={folders} onSave={async (p) => { await addItem(p); }} />
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />

@@ -22,7 +22,11 @@ export async function POST(req: NextRequest) {
   if (action === 'set') {
     user.pinHash = await hashSecret(pin);
     await user.save();
-    return NextResponse.json({ ok: true, message: 'PIN set successfully' });
+
+    // Generate a fresh sessionKey for security
+    const freshSessionKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64');
+
+    return NextResponse.json({ ok: true, message: 'PIN set successfully', sessionKey: freshSessionKey });
   }
 
   if (action === 'verify') {
@@ -31,7 +35,15 @@ export async function POST(req: NextRequest) {
     }
     const valid = await verifySecret(pin, user.pinHash);
     if (!valid) return NextResponse.json({ ok: false, error: 'Incorrect PIN' }, { status: 401 });
-    return NextResponse.json({ ok: true, user: { email: user.email, vaultName: user.vaultName } });
+
+    // Generate a fresh sessionKey for security
+    const freshSessionKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64');
+
+    return NextResponse.json({
+      ok: true,
+      user: { email: user.email, vaultName: user.vaultName },
+      sessionKey: freshSessionKey
+    });
   }
 
   return NextResponse.json({ ok: false, error: 'Invalid action' }, { status: 400 });
