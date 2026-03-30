@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Plus, KeyRound, Download } from 'lucide-react';
+import { Plus, KeyRound, Download, Menu, X } from 'lucide-react';
+import Link from 'next/link';
 import ImportPasswordsModal from '@/components/ImportPasswordsModal';
 import { ChromePasswordRow, normalizeLoginKey } from '@/lib/chrome-password-csv';
 import { useVault } from '@/context/VaultContext';
@@ -31,6 +32,7 @@ export default function PasswordsPage() {
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null | undefined>(undefined);
+  const [folderPanelOpen, setFolderPanelOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'password');
@@ -64,28 +66,66 @@ export default function PasswordsPage() {
     await addItemsBulk(payloads);
   }, [addItemsBulk]);
 
+  const handleFolderSelect = (next: string | null) => {
+    setFolderId(next);
+    setFolderPanelOpen(false);
+  };
+
   return (
-    <>
-      <div className="page-header">
-        <div>
+    <div className="page-layout">
+      <div className="page-header-grid">
+        <button
+          type="button"
+          className="panel-toggle"
+          onClick={() => setFolderPanelOpen((p) => !p)}
+          aria-label="Toggle folders"
+        >
+          <Menu size={16} /> Folders
+        </button>
+        <div className="title-block">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="item-type-icon icon-password" style={{ width: 36, height: 36 }}><KeyRound size={17} /></div>
             <h1 className="page-title">Passwords</h1>
           </div>
           <p className="page-subtitle">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}><Download size={15} /> Import from Chrome</button>
-          <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Password</button>
-        </div>
+        <nav className="breadcrumb-row" aria-label="Breadcrumb">
+          <Link href="/" className="breadcrumb-link">
+            Vault
+          </Link>
+          <span className="breadcrumb-separator">/</span>
+          <Link href="/passwords" className="breadcrumb-link active">
+            Passwords
+          </Link>
+        </nav>
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
-        <div style={{ width: 220, flexShrink: 0 }}>
-          <FolderTree activeFolderId={folderId} onSelect={setFolderId} />
-        </div>
+      <div className="primary-action-row">
+        <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}>
+          <Download size={15} /> Import from Chrome
+        </button>
+        <button type="button" className="btn btn-primary" onClick={() => setAddOpen(true)}>
+          <Plus size={15} /> Add Password
+        </button>
+      </div>
 
-        <div style={{ flex: 1 }}>
+      <div className="page-grid">
+        <aside className={`folder-panel ${folderPanelOpen ? 'open' : ''}`}>
+          <div className="panel-header">
+            <span>Folders</span>
+            <button
+              type="button"
+              className="panel-close"
+              onClick={() => setFolderPanelOpen(false)}
+              aria-label="Close folders"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <FolderTree activeFolderId={folderId} onSelect={handleFolderSelect} />
+        </aside>
+
+        <section className="content-panel">
           {filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔑</div>
@@ -110,18 +150,22 @@ export default function PasswordsPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
+        </section>
 
-      <button className="fab" onClick={() => setAddOpen(true)} title="Add password">+</button>
+        {folderPanelOpen && (
+          <div
+            className="panel-backdrop"
+            role="presentation"
+            onClick={() => setFolderPanelOpen(false)}
+          />
+        )}
+      </div>
 
       <ImportPasswordsModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
         items={items}
         onImported={(count) => { setImportOpen(false); }}
-        // We'll modify the modal to optionally use a bulk handler if provided,
-        // or just pass a dummy importRow since our new modal will use a specialized prop.
         importRow={async () => {}} 
         onBulkImport={handleBulkImport}
       />
@@ -130,6 +174,6 @@ export default function PasswordsPage() {
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this password permanently?" />
-    </>
+    </div>
   );
 }

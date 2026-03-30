@@ -25,7 +25,7 @@ interface AuthUser {
   hasPinSet: boolean;
 }
 
-interface AuthContextValue {
+export interface AuthContextValue {
   step: AuthStep;
   user: AuthUser | null;
   /** Display name for the vault (from `user`, with a safe default). */
@@ -358,7 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;

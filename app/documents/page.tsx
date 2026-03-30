@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useVault } from '@/context/VaultContext';
 import ItemCard from '@/components/ItemCard';
@@ -33,6 +33,7 @@ export default function DocumentsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [category, setCategory] = useState('All');
   const [folderId, setFolderId] = useState<string | null | undefined>(undefined);
+  const [folderPanelOpen, setFolderPanelOpen] = useState(false);
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'document');
@@ -45,48 +46,75 @@ export default function DocumentsPage() {
     return list;
   }, [items, folderId, category, searchQuery]);
 
+  const handleFolderSelect = (next: string | null) => {
+    setFolderId(next);
+    setFolderPanelOpen(false);
+  };
+
   return (
-    <>
-      <div className="page-header">
-        <div>
+    <div className="page-layout">
+      <div className="page-header-grid">
+        <button
+          type="button"
+          className="panel-toggle"
+          onClick={() => setFolderPanelOpen((p) => !p)}
+          aria-label="Toggle folders"
+        >
+          <Menu size={16} /> Folders
+        </button>
+        <div className="title-block">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div className="item-type-icon icon-document" style={{ width: 36, height: 36 }}><FileText size={17} /></div>
             <h1 className="page-title">Documents</h1>
           </div>
           <p className="page-subtitle">{filtered.length} document{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Document</button>
+        <nav className="breadcrumb-row" aria-label="Breadcrumb">
+          <Link href="/" className="breadcrumb-link">
+            Vault
+          </Link>
+          <span className="breadcrumb-separator">/</span>
+          <Link href="/documents" className="breadcrumb-link active">
+            Documents
+          </Link>
+        </nav>
       </div>
 
-      <nav className="breadcrumb-row" aria-label="Breadcrumb">
-        <Link href="/" className="breadcrumb-link">
-          Vault
-        </Link>
-        <span className="breadcrumb-separator">/</span>
-        <Link href="/documents" className="breadcrumb-link active">
-          Documents
-        </Link>
-      </nav>
-
-      {/* Category filter pills */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            className={`btn ${category === c ? "btn-primary" : "btn-ghost"}`}
-            style={{ padding: "5px 14px", fontSize: 12 }}
-            onClick={() => setCategory(c)}
-          >
-            {c}
-          </button>
-        ))}
+      <div className="primary-action-row">
+        <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+          <Plus size={15} /> Add Document
+        </button>
       </div>
 
-      <div className="documents-shell">
-        <aside className="folder-sidebar">
-          <FolderTree activeFolderId={folderId} onSelect={setFolderId} />
+      <div className="page-grid">
+        <aside className={`folder-panel ${folderPanelOpen ? 'open' : ''}`}>
+          <div className="panel-header">
+            <span>Folders</span>
+            <button
+              type="button"
+              className="panel-close"
+              onClick={() => setFolderPanelOpen(false)}
+              aria-label="Close folders"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <FolderTree activeFolderId={folderId} onSelect={handleFolderSelect} />
         </aside>
-        <section className="documents-main">
+
+        <section className="content-panel">
+          <div className="filter-pills" role="toolbar" aria-label="Document categories">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                className={`btn ${category === c ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
           {filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📄</div>
@@ -113,13 +141,20 @@ export default function DocumentsPage() {
             </div>
           )}
         </section>
+
+        {folderPanelOpen && (
+          <div
+            className="panel-backdrop"
+            role="presentation"
+            onClick={() => setFolderPanelOpen(false)}
+          />
+        )}
       </div>
 
-      <button className="fab" onClick={() => setAddOpen(true)} title="Add document">+</button>
       <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="document" folders={folders} onSave={async (p) => { await addItem(p); }} />
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this document permanently?" />
-    </>
+    </div>
   );
 }
