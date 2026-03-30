@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { useVault } from '@/context/VaultContext';
 import ItemCard from '@/components/ItemCard';
 import AddItemModal from '@/components/AddItemModal';
@@ -10,7 +11,19 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
 import type { VaultItem } from '@/lib/types';
 
-const CATEGORIES = ['All','Aadhaar','PAN','Passport','Visa','Driving Licence','Vehicle RC','Insurance','Medical','Bank','Other'];
+const CATEGORIES = [
+  "All",
+  "Aadhaar",
+  "PAN",
+  "Passport",
+  "Visa",
+  "Driving Licence",
+  "Vehicle RC",
+  "Insurance",
+  "Medical",
+  "Bank",
+  "Other",
+];
 
 export default function DocumentsPage() {
   const { items, addItem, updateItem, deleteItem, folders, searchQuery } = useVault();
@@ -45,35 +58,61 @@ export default function DocumentsPage() {
         <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Document</button>
       </div>
 
+      <nav className="breadcrumb-row" aria-label="Breadcrumb">
+        <Link href="/" className="breadcrumb-link">
+          Vault
+        </Link>
+        <span className="breadcrumb-separator">/</span>
+        <Link href="/documents" className="breadcrumb-link active">
+          Documents
+        </Link>
+      </nav>
+
       {/* Category filter pills */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        {CATEGORIES.map(c => (
-          <button key={c} className={`btn ${category === c ? 'btn-primary' : 'btn-ghost'}`} style={{ padding: '5px 14px', fontSize: 12 }} onClick={() => setCategory(c)}>
+        {CATEGORIES.map((c) => (
+          <button
+            key={c}
+            className={`btn ${category === c ? "btn-primary" : "btn-ghost"}`}
+            style={{ padding: "5px 14px", fontSize: 12 }}
+            onClick={() => setCategory(c)}
+          >
             {c}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 20 }}>
-        <div style={{ width: 200, flexShrink: 0 }}>
+      <div className="documents-shell">
+        <aside className="folder-sidebar">
           <FolderTree activeFolderId={folderId} onSelect={setFolderId} />
-        </div>
-        <div style={{ flex: 1 }}>
+        </aside>
+        <section className="documents-main">
           {filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📄</div>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>No documents</h3>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Store Aadhaar, PAN, Passport and more</p>
-              <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={14} /> Add Document</button>
+              <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+                <Plus size={14} /> Add Document
+              </button>
             </div>
           ) : (
             <div className="item-grid">
-              {filtered.map(item => (
-                <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+              {filtered.map((item) => (
+                <ItemCard
+                  key={item._id}
+                  item={item}
+                  onClick={setDetailItem}
+                  onEdit={setEditItem}
+                  onDelete={setDeleteId}
+                  onToggleFav={(it) =>
+                    updateItem(it._id, { isFavourite: !it.isFavourite })
+                  }
+                />
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add document">+</button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Search, Lock, User, LogOut, Settings } from "lucide-react";
+import { Menu, Search, Lock, User, LogOut, Settings } from "lucide-react";
 import { useVault } from "@/context/VaultContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -9,9 +9,10 @@ import Tooltip from "./Tooltip";
 
 interface TopBarProps {
   collapsed: boolean;
+  onToggleSidebar: () => void;
 }
 
-export default function TopBar({ collapsed }: TopBarProps) {
+export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
   const { searchQuery, setSearchQuery } = useVault();
   const { lock, signOut, vaultName, user } = useAuth();
   const router = useRouter();
@@ -61,7 +62,14 @@ export default function TopBar({ collapsed }: TopBarProps) {
   return (
     <header className={`topbar ${collapsed ? "sidebar-collapsed" : ""}`}>
       {/* Search */}
-      <div className="search-bar">
+        <button
+          className="hamburger-btn"
+          onClick={onToggleSidebar}
+          aria-label="Open navigation"
+        >
+          <Menu size={18} />
+        </button>
+        <div className="search-bar">
         <Search size={15} className="search-icon" />
         <input
           ref={inputRef}

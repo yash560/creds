@@ -11,6 +11,7 @@ import LoginGate from "./login-gate";
 function AppShell({ children }: { children: ReactNode }) {
   const { isAuthenticated, step } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   console.log(
     "AppShell render - isAuthenticated:",
@@ -31,10 +32,15 @@ function AppShell({ children }: { children: ReactNode }) {
       <div className="app-shell">
         <Sidebar
           collapsed={collapsed}
+          mobileOpen={mobileSidebarOpen}
           onToggle={() => setCollapsed((p) => !p)}
+          onClose={() => setMobileSidebarOpen(false)}
         />
         <div className={`main-content ${collapsed ? "sidebar-collapsed" : ""}`}>
-          <TopBar collapsed={collapsed} />
+          <TopBar
+            collapsed={collapsed}
+            onToggleSidebar={() => setMobileSidebarOpen((p) => !p)}
+          />
           <main className="page-body animate-fadeIn">{children}</main>
         </div>
         <MobileNav />

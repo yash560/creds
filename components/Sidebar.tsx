@@ -26,6 +26,8 @@ import Tooltip from "./Tooltip";
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onClose?: () => void;
 }
 
 const NAV = [
@@ -44,7 +46,12 @@ const SETTINGS_NAV = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export default function Sidebar({
+  collapsed,
+  onToggle,
+  mobileOpen = false,
+  onClose,
+}: SidebarProps) {
   const pathname = usePathname();
   const { lock, vaultName } = useAuth();
   const [helpOpen, setHelpOpen] = useState(false);
@@ -53,7 +60,12 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+    <>
+      <aside
+        className={`sidebar ${collapsed ? "collapsed" : ""} ${
+          mobileOpen ? "mobile-open" : ""
+        }`}
+      >
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
@@ -165,7 +177,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </Tooltip>
       </div>
 
+      </aside>
+      {mobileOpen && onClose && (
+        <div className="sidebar-backdrop" onClick={onClose} />
+      )}
       <HelpGuideModal open={helpOpen} onClose={() => setHelpOpen(false)} />
-    </aside>
+    </>
   );
 }
