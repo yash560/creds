@@ -14,10 +14,10 @@ export interface IUser {
 
 const UserSchema = new Schema<IUser>(
   {
-    email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    pinHash:      { type: String, default: null },
-    vaultName:    { type: String, default: 'My Vault' },
+    pinHash: { type: String, default: null },
+    vaultName: { type: String, default: 'My Vault' },
   },
   { timestamps: true }
 );
@@ -51,14 +51,14 @@ interface IItem {
 
 const ItemSchema = new Schema<IItem>(
   {
-    userId:       { type: String, required: true, index: true },
-    type:         { type: String, required: true },
-    title:        { type: String, required: true },
-    tags:         [{ type: String }],
-    folderId:     { type: String, default: null },
-    fields:       { type: Map, of: String, default: {} },
-    fileData:     { type: String },
-    fileName:     { type: String },
+    userId: { type: String, required: true, index: true },
+    type: { type: String, required: true },
+    title: { type: String, required: true },
+    tags: [{ type: String }],
+    folderId: { type: String, default: null },
+    fields: { type: Map, of: String, default: {} },
+    fileData: { type: String },
+    fileName: { type: String },
     fileMimeType: { type: String },
     attachments: [{
       data: { type: String, required: true },
@@ -67,7 +67,7 @@ const ItemSchema = new Schema<IItem>(
       label: { type: String },
     }],
     dedupeKey: { type: String, index: true },
-    isFavourite:  { type: Boolean, default: false },
+    isFavourite: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -87,12 +87,12 @@ interface IFolder {
 }
 
 const FolderSchema = new Schema<IFolder>({
-  userId:   { type: String, required: true, index: true },
-  name:     { type: String, required: true },
+  userId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
   parentId: { type: String, default: null },
-  path:     [{ type: String }],
-  icon:     { type: String },
-  createdAt:{ type: Date, default: Date.now },
+  path: [{ type: String }],
+  icon: { type: String },
+  createdAt: { type: Date, default: Date.now },
 });
 
 export const FolderModel: Model<IFolder> =
@@ -110,14 +110,57 @@ interface IFamilyMember {
 }
 
 const FamilyMemberSchema = new Schema<IFamilyMember>({
-  userId:      { type: String, required: true, index: true },
-  name:        { type: String, required: true },
-  emoji:       { type: String, default: '👤' },
-  role:        { type: String, default: 'viewer' },
+  userId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  emoji: { type: String, default: '👤' },
+  role: { type: String, default: 'viewer' },
   permissions: [{ type: String }],
-  createdAt:   { type: Date, default: Date.now },
+  createdAt: { type: Date, default: Date.now },
 });
 
 export const FamilyMemberModel: Model<IFamilyMember> =
   mongoose.models.FamilyMember ||
   mongoose.model<IFamilyMember>('FamilyMember', FamilyMemberSchema);
+
+// ─── ShareLink ────────────────────────────────────────────────────────────────
+
+export interface IShareLink {
+  _id: Types.ObjectId;
+  linkId: string;              // unique short ID for URL
+  itemId: string;              // which item to share
+  userId: string;              // who owns this link
+  type: 'open' | 'semi-encrypted' | 'fully-encrypted';
+  role: 'read' | 'download' | 'edit';
+  pinHash?: string;            // bcrypt of PIN for semi-encrypted
+  allowedEmails?: string[];    // for fully-encrypted access control
+  expiresAt?: Date;
+  accessLog?: {
+    ip?: string;
+    email?: string;
+    accessedAt: Date;
+  }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ShareLinkSchema = new Schema<IShareLink>(
+  {
+    linkId: { type: String, required: true, unique: true, index: true },
+    itemId: { type: String, required: true, index: true },
+    userId: { type: String, required: true, index: true },
+    type: { type: String, enum: ['open', 'semi-encrypted', 'fully-encrypted'], required: true },
+    role: { type: String, enum: ['read', 'download', 'edit'], default: 'read' },
+    pinHash: { type: String },
+    allowedEmails: [{ type: String }],
+    expiresAt: { type: Date },
+    accessLog: [{
+      ip: { type: String },
+      email: { type: String },
+      accessedAt: { type: Date, default: Date.now },
+    }],
+  },
+  { timestamps: true }
+);
+
+export const ShareLinkModel: Model<IShareLink> =
+  mongoose.models.ShareLink || mongoose.model<IShareLink>('ShareLink', ShareLinkSchema);
