@@ -5,6 +5,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import type { CardItem } from '@/lib/types';
 import CopyButton from '../CopyButton';
 import Tooltip from '../Tooltip';
+import { detectCardBrand } from '@/lib/card-ocr-parse';
 
 interface CreditCardViewProps {
   item: CardItem;
@@ -13,34 +14,91 @@ interface CreditCardViewProps {
 function maskNumber(num: string) {
   const digits = num.replace(/\D/g, '');
   const last4 = digits.slice(-4);
-  return `•••• •••• •••• ${last4}`;
+  // Amex is 4-6-5
+  if (digits.length === 15) return `•••• •••••• ${last4.padStart(5, '•').slice(-5)}`;
+  // Standard 4-4-4-4
+  const groups = digits.match(/.{1,4}/g) || [];
+  return groups
+    .map((g, i) => (i < groups.length - 1 ? '••••' : g))
+    .join(' ');
 }
 
-function detectType(num: string): string {
-  const d = num.replace(/\D/g, '');
-  if (d.startsWith('4')) return 'visa';
-  if (/^5[1-5]/.test(d)) return 'mastercard';
-  if (/^3[47]/.test(d)) return 'amex';
-  return 'default';
+/** Format a raw digit string as a spaced display number. */
+function formatNumber(num: string): string {
+  const digits = num.replace(/\D/g, '');
+  if (digits.length === 15) {
+    // Amex: 4-6-5
+    return `${digits.slice(0, 4)} ${digits.slice(4, 10)} ${digits.slice(10)}`;
+  }
+  // Default: groups of 4
+  return (digits.match(/.{1,4}/g) || []).join(' ');
+}
+
+/** Brand logo / badge rendered on the card face. */
+function BrandBadge({ brand }: { brand: string }) {
+  switch (brand) {
+    case 'visa':
+      return (
+        <span style={{ fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.9)', letterSpacing: '-0.02em', fontStyle: 'italic', fontFamily: 'serif' }}>
+          VISA
+        </span>
+      );
+    case 'mastercard':
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#EB001B', display: 'inline-block', opacity: 0.9 }} />
+          <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#F79E1B', display: 'inline-block', marginLeft: -10, opacity: 0.9 }} />
+        </span>
+      );
+    case 'amex':
+      return (
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.1em' }}>
+          AMERICAN EXPRESS
+        </span>
+      );
+    case 'discover':
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.05em' }}>DISCOVER</span>
+          <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#F76F20', display: 'inline-block' }} />
+        </span>
+      );
+    case 'rupay':
+      return (
+        <span style={{ fontSize: 17, fontWeight: 900, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.05em' }}>
+          Ru<span style={{ color: '#F4A020' }}>Pay</span>
+        </span>
+      );
+    case 'maestro':
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#009BE1', display: 'inline-block' }} />
+          <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#ED1C2E', display: 'inline-block', marginLeft: -10 }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginLeft: 6 }}>maestro</span>
+        </span>
+      );
+    default:
+      return null;
+  }
 }
 
 export default function CreditCardView({ item }: CreditCardViewProps) {
   const [showCvv, setShowCvv] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const { cardNumber = '', cardholderName = '', expiry = '', cvv = '', pin = '', notes = '', cardType } = item.fields;
-  const type = cardType || detectType(cardNumber);
+  const brand = cardType || detectCardBrand(cardNumber);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Visual card */}
-      <div className={`credit-card-visual ${type}`}>
+      <div className={`credit-card-visual ${brand}`}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="card-chip" />
-          <div style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {type === 'visa' ? 'VISA' : type === 'mastercard' ? '●●' : type === 'amex' ? 'AMEX' : ''}
-          </div>
+          <BrandBadge brand={brand} />
         </div>
-        <div className="card-number">{cardNumber ? maskNumber(cardNumber) : '•••• •••• •••• ••••'}</div>
+        <div className="card-number">
+          {cardNumber ? maskNumber(cardNumber) : '•••• •••• •••• ••••'}
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div className="card-expiry-label">Card Holder</div>
@@ -70,7 +128,7 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
         <div style={{ gridColumn: '1 / -1' }}>
           <div className="form-label">Card Number</div>
           <div className="input-with-action">
-            <div className="form-input mono" style={{ flex: 1 }}>{maskNumber(cardNumber)}</div>
+            <div className="form-input mono" style={{ flex: 1 }}>{formatNumber(cardNumber) || '—'}</div>
             <CopyButton value={cardNumber} label="Copy number" />
           </div>
         </div>
@@ -79,14 +137,14 @@ export default function CreditCardView({ item }: CreditCardViewProps) {
         <div>
           <div className="form-label">Expiry</div>
           <div className="input-with-action">
-            <div className="form-input" style={{ flex: 1 }}>{expiry}</div>
+            <div className="form-input" style={{ flex: 1 }}>{expiry || '—'}</div>
             <CopyButton value={expiry} label="Copy expiry" />
           </div>
         </div>
 
         {/* CVV */}
         <div>
-          <div className="form-label">CVV</div>
+          <div className="form-label">CVV / CVC</div>
           <div className="input-with-action">
             <div className="form-input mono" style={{ flex: 1 }}>
               {showCvv ? cvv : '•'.repeat(cvv.length || 3)}
