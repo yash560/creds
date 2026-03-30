@@ -48,6 +48,7 @@ interface AuthContextValue {
   setupPin: (pin: string) => Promise<void>;
   skipPin: () => void;
   lock: () => Promise<void>;
+  signOut: () => Promise<void>;
   goToRegister: () => void;
   goToSignIn: () => void;
   clearError: () => void;
