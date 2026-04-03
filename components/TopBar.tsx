@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Menu, Search, Lock, User, LogOut, Settings } from "lucide-react";
+import { Menu, Search, Lock, User, LogOut, Settings, Volume2, VolumeX } from "lucide-react";
 import { useVault } from "@/context/VaultContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSound } from "@/context/SoundContext";
 import { useRouter } from "next/navigation";
 import Tooltip from "./Tooltip";
 
@@ -15,6 +16,7 @@ interface TopBarProps {
 export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
   const { searchQuery, setSearchQuery } = useVault();
   const { lock, signOut, vaultName, user } = useAuth();
+  const { isMuted, toggleMute } = useSound();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [localQ, setLocalQ] = useState(searchQuery);
@@ -87,6 +89,16 @@ export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
 
       {/* Right actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Tooltip label={isMuted ? "Unmute" : "Mute interactions"}>
+          <button
+            className="btn btn-ghost btn-icon"
+            onClick={toggleMute}
+            aria-label="Toggle mute"
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        </Tooltip>
+
         <Tooltip label="Lock vault">
           <button
             className="btn btn-ghost btn-icon"

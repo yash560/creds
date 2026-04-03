@@ -6,6 +6,7 @@ import type { VaultItem } from '@/lib/types';
 import CopyButton from './CopyButton';
 import Tooltip from './Tooltip';
 import { detectCardBrand } from '@/lib/card-ocr-parse';
+import { useSound } from '@/context/SoundContext';
 
 interface ItemCardProps {
   item: VaultItem;
@@ -62,8 +63,10 @@ export default function ItemCard({
   onSelect
 }: ItemCardProps) {
   const { Icon, cls } = TYPE_ICONS[item.type] ?? TYPE_ICONS.document;
+  const { playSound } = useSound();
 
   const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    playSound('click');
     if (selectable && onSelect) {
       e.stopPropagation();
       onSelect(item._id, !isSelected);

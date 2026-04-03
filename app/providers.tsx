@@ -8,6 +8,7 @@ import TopBar from "@/components/TopBar";
 import MobileNav from "@/components/MobileNav";
 import LoginGate from "./login-gate";
 import { usePathname } from "next/navigation";
+import { SoundProvider } from "@/context/SoundContext";
 
 function AppShell({ children }: { children: ReactNode }) {
   const { isAuthenticated, step } = useAuth();
@@ -66,7 +67,9 @@ function AppShell({ children }: { children: ReactNode }) {
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <AppShell>{children}</AppShell>
+      <SoundProvider>
+        <AppShell>{children}</AppShell>
+      </SoundProvider>
     </AuthProvider>
   );
 }

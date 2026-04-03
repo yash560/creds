@@ -12,6 +12,7 @@ import type { VaultItem, Folder, FamilyMember, Attachment, Category } from "@/li
 import { useAuth } from "./AuthContext";
 import { getEncryptedCache, setEncryptedCache } from "@/lib/crypto-vault";
 import { normalizeAttachments } from "@/lib/attachments";
+import { useSound } from "./SoundContext";
 
 interface VaultContextValue {
   items: VaultItem[];
@@ -51,6 +52,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { playSound } = useSound();
   const [searchQuery, setSearchQuery] = useState("");
 
   const parseApiResponse = useCallback(async (res: Response) => {
@@ -241,9 +243,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
         return next;
       });
+      playSound('success');
       return data.data;
     },
-    [cryptoKey, preparePayload, parseApiResponse],
+    [cryptoKey, preparePayload, parseApiResponse, playSound],
   );
 
   const addItemsBulk = useCallback(
@@ -288,9 +291,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
           if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
           return next;
         });
+        playSound('success');
       }
     },
-    [cryptoKey, preparePayload, parseApiResponse],
+    [cryptoKey, preparePayload, parseApiResponse, playSound],
   );
 
   const updateItem = useCallback(
@@ -321,8 +325,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
         return next;
       });
+      playSound('delete');
     },
-    [cryptoKey],
+    [cryptoKey, playSound],
   );
 
   const mergeItems = useCallback(
@@ -342,9 +347,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
           if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
           return next;
         });
+        playSound('success');
       }
     },
-    [cryptoKey, parseApiResponse],
+    [cryptoKey, parseApiResponse, playSound],
   );
 
   const addFolder = useCallback(
