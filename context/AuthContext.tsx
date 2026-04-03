@@ -228,7 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     console.log("Setting step to authenticated"); // Debug log
     setStep("authenticated");
-  }, []);
+  }, [user]);
 
   // ── Setup PIN ─────────────────────────────────────────────────────────────────
   const setupPin = useCallback(

@@ -9,12 +9,11 @@ interface TooltipProps {
 }
 
 export default function Tooltip({ label, children }: TooltipProps) {
-  const trimmed = (label ?? '').trim();
-  if (!trimmed) return <>{children}</>;
-
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const trimmed = (label ?? '').trim();
 
   const reposition = useCallback(() => {
     const el = wrapRef.current;
@@ -73,6 +72,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
           document.body
         )
       : null;
+  if (!trimmed) return <>{children}</>;
 
   return (
     <>

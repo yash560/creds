@@ -75,18 +75,6 @@ export function detectCardBrand(pan: string): string {
   return 'default';
 }
 
-/** Returns expected digit lengths for a given brand */
-function brandExpectedLengths(brand: string): number[] {
-  switch (brand) {
-    case 'amex': return [15];
-    case 'diners': return [14];
-    case 'jcb': return [16];
-    case 'maestro': return [12, 13, 14, 15, 16, 17, 18, 19];
-    case 'unionpay': return [16, 17, 18, 19];
-    default: return [16]; // visa, mc, discover, rupay
-  }
-}
-
 // ─────────────────────────────────────────────
 // PAN Extraction
 // ─────────────────────────────────────────────

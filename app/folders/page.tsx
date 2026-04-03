@@ -11,7 +11,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import type { Folder, VaultItem } from '@/lib/types';
 
 export default function FoldersPage() {
-  const { folders, addFolder, renameFolder, deleteFolder, items, addItem, updateItem, deleteItem } = useVault();
+  const { folders, addFolder, updateFolder, deleteFolder, items, addItem, updateItem, deleteItem } = useVault();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [addFolderOpen, setAddFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -120,7 +120,7 @@ export default function FoldersPage() {
       <Modal open={!!editFolder} onClose={() => setEditFolder(null)} title="Rename Folder"
         footer={<>
           <button className="btn btn-ghost" onClick={() => setEditFolder(null)}>Cancel</button>
-          <button className="btn btn-primary" onClick={async () => { if (editFolder && newFolderName.trim()) { await renameFolder(editFolder._id, newFolderName.trim()); setEditFolder(null); setNewFolderName(''); } }}>Save</button>
+          <button className="btn btn-primary" onClick={async () => { if (editFolder && newFolderName.trim()) { await updateFolder(editFolder._id, { name: newFolderName.trim() }); setEditFolder(null); setNewFolderName(''); } }}>Save</button>
         </>}>
         <input className="form-input" value={editFolder ? (newFolderName || editFolder.name) : ''} onChange={e => setNewFolderName(e.target.value)} autoFocus />
       </Modal>

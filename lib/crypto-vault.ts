@@ -23,7 +23,7 @@ function uint8ArrayToBase64(arr: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < arr.length; i += chunkSize) {
     const chunk = arr.slice(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk) as any);
+    binary += String.fromCharCode.apply(null, Array.from(chunk) as unknown as number[]);
   }
   return btoa(binary);
 }
