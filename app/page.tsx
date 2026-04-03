@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { KeyRound, FileText, ScanLine, Star, Plus, Clock, CreditCard } from 'lucide-react';
+import { KeyRound, FileText, ScanLine, Star, Plus, Clock, CreditCard, Search } from 'lucide-react';
 import { useVault } from '@/context/VaultContext';
 import Link from 'next/link';
 import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ItemCard from '@/components/ItemCard';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 const STATS = [
@@ -18,7 +19,7 @@ const STATS = [
 ];
 
 export default function DashboardPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -26,6 +27,10 @@ export default function DashboardPage() {
 
   const recent = useMemo(() => [...items].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 8), [items]);
   const favourites = useMemo(() => items.filter(i => i.isFavourite), [items]);
+
+  const searchResults = useMemo(() => {
+    return filterItems(items, searchQuery, folders, members);
+  }, [items, searchQuery, folders, members]);
 
   return (
     <>
@@ -65,42 +70,66 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Favourites */}
-      {favourites.length > 0 && (
+      {searchQuery ? (
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Star size={16} style={{ color: 'var(--accent-amber)' }} />
-            <h2 style={{ fontSize: 16, fontWeight: 600 }}>Favourites</h2>
+            <Search size={16} style={{ color: 'var(--accent-primary)' }} />
+            <h2 style={{ fontSize: 16, fontWeight: 600 }}>Search Results</h2>
           </div>
-          <div className="item-grid">
-            {favourites.slice(0,4).map(item => (
-              <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
-            ))}
-          </div>
+          {searchResults.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <h3 style={{ fontSize: 16, fontWeight: 600 }}>No matches found</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Try different keywords or check for typos</p>
+            </div>
+          ) : (
+            <div className="item-grid">
+              {searchResults.map(item => (
+                <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      ) : (
+        <>
+          {/* Favourites */}
+          {favourites.length > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Star size={16} style={{ color: 'var(--accent-amber)' }} />
+                <h2 style={{ fontSize: 16, fontWeight: 600 }}>Favourites</h2>
+              </div>
+              <div className="item-grid">
+                {favourites.slice(0,4).map(item => (
+                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Recent */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <Clock size={16} style={{ color: 'var(--text-secondary)' }} />
-          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Recent</h2>
-        </div>
-        {recent.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🔐</div>
-            <h3 style={{ fontSize: 18, fontWeight: 600 }}>Vault is empty</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Add your first password, card, or document to get started.</p>
-            <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Item</button>
+          {/* Recent */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <Clock size={16} style={{ color: 'var(--text-secondary)' }} />
+              <h2 style={{ fontSize: 16, fontWeight: 600 }}>Recent</h2>
+            </div>
+            {recent.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🔐</div>
+                <h3 style={{ fontSize: 18, fontWeight: 600 }}>Vault is empty</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Add your first password, card, or document to get started.</p>
+                <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Item</button>
+              </div>
+            ) : (
+              <div className="item-grid">
+                {recent.map(item => (
+                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="item-grid">
-            {recent.map(item => (
-              <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
-            ))}
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* FAB */}
       <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add item" title="Add item">+</button>

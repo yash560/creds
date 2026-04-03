@@ -623,7 +623,7 @@ export default function ProfilePage() {
               This action cannot be undone
             </div>
             All your vault data, including passwords, documents, cards, and
-            family members will be permanently deleted.
+            Members will be permanently deleted.
           </div>
 
           <form

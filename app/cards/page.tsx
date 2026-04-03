@@ -8,6 +8,7 @@ import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { GridSkeleton } from '@/components/SkeletonLoader';
+import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 export default function CardsPage() {
@@ -19,12 +20,8 @@ export default function CardsPage() {
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'card');
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(i => i.title.toLowerCase().includes(q));
-    }
-    return list;
-  }, [items, searchQuery]);
+    return filterItems(list, searchQuery, folders, members);
+  }, [items, searchQuery, folders, members]);
 
   return (
     <>

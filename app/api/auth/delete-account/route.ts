@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { UserModel, ItemModel, FolderModel, FamilyMemberModel } from '@/lib/models';
 import { verifySecret } from '@/lib/crypto-secret';
-import { getSession, COOKIE_NAME, COOKIE_OPTS } from '@/lib/session';
+import { getSession, COOKIE_NAME, } from '@/lib/session';
 
 // POST /api/auth/delete-account
 export async function POST(req: NextRequest) {

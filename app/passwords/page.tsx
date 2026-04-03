@@ -12,6 +12,7 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
 import { GridSkeleton } from '@/components/SkeletonLoader';
+import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 function titleFromChromeRow(row: ChromePasswordRow): string {
@@ -43,12 +44,8 @@ export default function PasswordsPage() {
     if (folderId !== undefined) {
       list = list.filter(i => i.folderId === folderId);
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(i => i.title.toLowerCase().includes(q) || i.tags?.some(t => t.toLowerCase().includes(q)));
-    }
-    return list;
-  }, [items, folderId, searchQuery]);
+    return filterItems(list, searchQuery, folders, members);
+  }, [items, folderId, searchQuery, folders, members]);
 
   const handleBulkImport = useCallback(async (rows: ChromePasswordRow[]) => {
     const payloads = rows.map(row => ({
@@ -169,7 +166,7 @@ export default function PasswordsPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         items={items}
-        onImported={(count) => { setImportOpen(false); }}
+        onImported={() => { setImportOpen(false); }}
         importRow={async () => {}} 
         onBulkImport={handleBulkImport}
       />

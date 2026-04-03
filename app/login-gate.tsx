@@ -400,7 +400,7 @@ export default function LoginGate() {
       <div
         style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4 }}
       >
-        Your super-private family vault
+        Your super-private vault
       </div>
     </div>
   );
@@ -496,7 +496,7 @@ export default function LoginGate() {
               label="Vault name (optional)"
               value={regVault}
               onChange={setRegVault}
-              placeholder="e.g. Jain Family Vault"
+              placeholder="e.g. Family Vault"
               icon={User}
             />
 

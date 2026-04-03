@@ -35,14 +35,13 @@ const NAV = [
   { label: "Passwords", href: "/passwords", icon: KeyRound },
   { label: "Cards", href: "/cards", icon: CreditCard },
   { label: "Documents", href: "/documents", icon: FileText },
-  { label: "Family", href: "/family", icon: Users },
+  { label: "People", href: "/family", icon: Users },
   { label: "Folders", href: "/folders", icon: FolderOpen },
   { label: "Scan", href: "/scan", icon: ScanLine },
 ];
 
 const SETTINGS_NAV = [
   { label: "Profile", href: "/profile", icon: User },
-  { label: "Roles & Members", href: "/settings/roles", icon: Shield },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -66,117 +65,116 @@ export default function Sidebar({
           mobileOpen ? "mobile-open" : ""
         }`}
       >
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">
-          <Shield size={16} color="white" />
+        {/* Logo */}
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">
+            <Shield size={16} color="white" />
+          </div>
+          {!collapsed && <span className="sidebar-logo-text">{vaultName}</span>}
         </div>
-        {!collapsed && <span className="sidebar-logo-text">{vaultName}</span>}
-      </div>
 
-      {/* Nav */}
-      <nav className="sidebar-nav">
-        {!collapsed && <div className="sidebar-section-label">Vault</div>}
+        {/* Nav */}
+        <nav className="sidebar-nav">
+          {!collapsed && <div className="sidebar-section-label">Vault</div>}
 
-        {NAV.map(({ label, href, icon: Icon }) => (
-          <Tooltip key={href} label={collapsed ? label : ""}>
-            <Link
-              href={href}
-              className={`nav-item ${isActive(href) ? "active" : ""}`}
-              style={{ justifyContent: collapsed ? "center" : undefined }}
+          {NAV.map(({ label, href, icon: Icon }) => (
+            <Tooltip key={href} label={collapsed ? label : ""}>
+              <Link
+                href={href}
+                className={`nav-item ${isActive(href) ? "active" : ""}`}
+                style={{ justifyContent: collapsed ? "center" : undefined }}
+              >
+                <Icon size={18} className="nav-icon" />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            </Tooltip>
+          ))}
+
+          <div className="divider" />
+          {!collapsed && <div className="sidebar-section-label">Account</div>}
+
+          {SETTINGS_NAV.map(({ label, href, icon: Icon }) => (
+            <Tooltip key={href} label={collapsed ? label : ""}>
+              <Link
+                href={href}
+                className={`nav-item ${isActive(href) ? "active" : ""}`}
+                style={{ justifyContent: collapsed ? "center" : undefined }}
+              >
+                <Icon size={18} className="nav-icon" />
+                {!collapsed && <span>{label}</span>}
+              </Link>
+            </Tooltip>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="sidebar-footer">
+          <Tooltip label={collapsed ? "How to use" : ""}>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="nav-item"
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                justifyContent: collapsed ? "center" : undefined,
+                cursor: "pointer",
+                color: "var(--accent-cyan)",
+              }}
             >
-              <Icon size={18} className="nav-icon" />
-              {!collapsed && <span>{label}</span>}
-            </Link>
+              <CircleHelp size={18} className="nav-icon" />
+              {!collapsed && <span>How to use</span>}
+            </button>
           </Tooltip>
-        ))}
 
-        <div className="divider" />
-        {!collapsed && <div className="sidebar-section-label">Account</div>}
-
-        {SETTINGS_NAV.map(({ label, href, icon: Icon }) => (
-          <Tooltip key={href} label={collapsed ? label : ""}>
-            <Link
-              href={href}
-              className={`nav-item ${isActive(href) ? "active" : ""}`}
-              style={{ justifyContent: collapsed ? "center" : undefined }}
+          <Tooltip label={collapsed ? "Lock vault" : ""}>
+            <button
+              onClick={() => lock()}
+              className="nav-item"
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                justifyContent: collapsed ? "center" : undefined,
+                cursor: "pointer",
+              }}
             >
-              <Icon size={18} className="nav-icon" />
-              {!collapsed && <span>{label}</span>}
-            </Link>
+              <Lock
+                size={18}
+                className="nav-icon"
+                style={{ color: "var(--accent-rose)" }}
+              />
+              {!collapsed && (
+                <span style={{ color: "var(--accent-rose)" }}>Lock Vault</span>
+              )}
+            </button>
           </Tooltip>
-        ))}
-      </nav>
 
-      {/* Footer */}
-      <div className="sidebar-footer">
-        <Tooltip label={collapsed ? "How to use" : ""}>
-          <button
-            type="button"
-            onClick={() => setHelpOpen(true)}
-            className="nav-item"
-            style={{
-              width: "100%",
-              background: "none",
-              border: "none",
-              justifyContent: collapsed ? "center" : undefined,
-              cursor: "pointer",
-              color: "var(--accent-cyan)",
-            }}
-          >
-            <CircleHelp size={18} className="nav-icon" />
-            {!collapsed && <span>How to use</span>}
-          </button>
-        </Tooltip>
-
-        <Tooltip label={collapsed ? "Lock vault" : ""}>
-          <button
-            onClick={() => lock()}
-            className="nav-item"
-            style={{
-              width: "100%",
-              background: "none",
-              border: "none",
-              justifyContent: collapsed ? "center" : undefined,
-              cursor: "pointer",
-            }}
-          >
-            <Lock
-              size={18}
-              className="nav-icon"
-              style={{ color: "var(--accent-rose)" }}
-            />
-            {!collapsed && (
-              <span style={{ color: "var(--accent-rose)" }}>Lock Vault</span>
-            )}
-          </button>
-        </Tooltip>
-
-        <Tooltip label={collapsed ? "Expand sidebar" : ""}>
-          <button
-            onClick={onToggle}
-            className="nav-item"
-            style={{
-              width: "100%",
-              background: "none",
-              border: "none",
-              justifyContent: collapsed ? "center" : undefined,
-              cursor: "pointer",
-              marginTop: 4,
-            }}
-          >
-            {collapsed ? (
-              <ChevronRight size={18} className="nav-icon" />
-            ) : (
-              <>
-                <ChevronLeft size={18} className="nav-icon" />
-                <span>Collapse</span>
-              </>
-            )}
-          </button>
-        </Tooltip>
-      </div>
-
+          <Tooltip label={collapsed ? "Expand sidebar" : ""}>
+            <button
+              onClick={onToggle}
+              className="nav-item"
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                justifyContent: collapsed ? "center" : undefined,
+                cursor: "pointer",
+                marginTop: 4,
+              }}
+            >
+              {collapsed ? (
+                <ChevronRight size={18} className="nav-icon" />
+              ) : (
+                <>
+                  <ChevronLeft size={18} className="nav-icon" />
+                  <span>Collapse</span>
+                </>
+              )}
+            </button>
+          </Tooltip>
+        </div>
       </aside>
       {mobileOpen && onClose && (
         <div className="sidebar-backdrop" onClick={onClose} />

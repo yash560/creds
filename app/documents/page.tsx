@@ -12,6 +12,7 @@ import FolderTree from '@/components/FolderTree';
 import ZipImportModal from '@/components/ZipImportModal';
 import CategoryManagerModal from '@/components/CategoryManagerModal';
 import { GridSkeleton } from '@/components/SkeletonLoader';
+import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 export default function DocumentsPage() {
@@ -67,16 +68,8 @@ export default function DocumentsPage() {
       list = list.filter((i) => i.folderId === folderId);
     if (category !== "All")
       list = list.filter((i) => i.fields.category === category);
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (i) =>
-          i.title.toLowerCase().includes(q) ||
-          i.tags?.some((t) => t.toLowerCase().includes(q))
-      );
-    }
-    return list;
-  }, [items, folderId, category, searchQuery]);
+    return filterItems(list, searchQuery, folders, members);
+  }, [items, folderId, category, searchQuery, folders, members]);
 
   const handleFolderSelect = (next: string | null) => {
     setFolderId(next);

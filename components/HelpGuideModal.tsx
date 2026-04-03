@@ -57,7 +57,7 @@ const GUIDES: {
   },
   {
     icon: Users,
-    title: "Family",
+    title: "People",
     body: "Track household members and roles. Pair with settings to tune who sees what as you grow the product.",
   },
   {

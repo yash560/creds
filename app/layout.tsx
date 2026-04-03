@@ -4,7 +4,7 @@ import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "Vaultora",
-  description: "Your super-private family credential & document vault",
+  description: "Your super-private credential & document vault",
 };
 
 export default function RootLayout({
