@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { KeyRound, CreditCard, FileText, ScanLine, Star, Pencil, Trash2 } from 'lucide-react';
 import type { VaultItem } from '@/lib/types';
 import CopyButton from './CopyButton';
@@ -14,6 +14,9 @@ interface ItemCardProps {
   onDelete: (id: string) => void;
   onToggleFav?: (item: VaultItem) => void;
   onClick?: (item: VaultItem) => void;
+  isSelected?: boolean;
+  selectable?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
 const TYPE_ICONS = {
@@ -47,8 +50,28 @@ function formatCardNumber(num: string) {
   return (digits.match(/.{1,4}/g) || []).join(' ');
 }
 
-export default function ItemCard({ item, members = [], onEdit, onDelete, onToggleFav, onClick }: ItemCardProps) {
+export default function ItemCard({ 
+  item, 
+  members = [], 
+  onEdit, 
+  onDelete, 
+  onToggleFav, 
+  onClick,
+  isSelected,
+  selectable,
+  onSelect
+}: ItemCardProps) {
   const { Icon, cls } = TYPE_ICONS[item.type] ?? TYPE_ICONS.document;
+
+  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (selectable && onSelect) {
+      e.stopPropagation();
+      onSelect(item._id, !isSelected);
+    } else {
+      onClick?.(item);
+    }
+  };
+
   const subtitle = getSubtitle(item);
   const copyVal = getCopyValue(item);
   const { cardNumber = '', expiry = '', cvv = '', cardholderName = '', pin = '', cardType = '' } =
@@ -94,12 +117,17 @@ export default function ItemCard({ item, members = [], onEdit, onDelete, onToggl
 
   return (
     <div
-      className={`item-card ${item.type}`}
-      onClick={() => onClick?.(item)}
+      className={`item-card ${item.type} ${isSelected ? 'isSelected' : ''} ${selectable ? 'selectable-mode' : ''}`}
+      onClick={handleCardClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick?.(item)}
+      onKeyDown={(e) => e.key === 'Enter' && handleCardClick(e)}
     >
+      {selectable && (
+        <div className={`selection-indicator ${isSelected ? 'active' : ''}`}>
+          {isSelected && <Star size={10} fill="currentColor" />}
+        </div>
+      )}
       {item.type === 'card' ? (
         <>
           <div className="card-summary">

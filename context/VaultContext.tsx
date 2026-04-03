@@ -8,7 +8,7 @@ import {
   ReactNode,
   useCallback,
 } from "react";
-import type { VaultItem, Folder, FamilyMember, Attachment } from "@/lib/types";
+import type { VaultItem, Folder, FamilyMember, Attachment, Category } from "@/lib/types";
 import { useAuth } from "./AuthContext";
 import { getEncryptedCache, setEncryptedCache } from "@/lib/crypto-vault";
 import { normalizeAttachments } from "@/lib/attachments";
@@ -25,16 +25,21 @@ interface VaultContextValue {
   addItemsBulk: (payloads: Partial<VaultItem>[]) => Promise<void>;
   updateItem: (id: string, payload: Partial<VaultItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  mergeItems: (targetId: string, sourceIds: string[]) => Promise<void>;
   addFolder: (
     name: string,
     parentId?: string | null,
     icon?: string,
   ) => Promise<Folder>;
+  updateFolder: (id: string, payload: { name?: string; icon?: string; parentId?: string | null }) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
-  renameFolder: (id: string, name: string) => Promise<void>;
   addMember: (payload: Partial<FamilyMember>) => Promise<FamilyMember>;
   updateMember: (id: string, payload: Partial<FamilyMember>) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
+  categories: Category[];
+  addCategory: (name: string) => Promise<Category>;
+  updateCategory: (id: string, name: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
 }
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -44,6 +49,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<VaultItem[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -140,13 +146,14 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
-      const [ir, fr, mr] = await Promise.all([
+      const [ir, fr, mr, cr] = await Promise.all([
         fetch("/api/items").then((r) => r.json()),
         fetch("/api/folders").then((r) => r.json()),
         fetch("/api/members").then((r) => r.json()),
+        fetch("/api/categories").then((r) => r.json()),
       ]);
 
-      console.log("API Responses:", { ir, fr, mr }); // Debug log
+      console.log("API Responses:", { ir, fr, mr, cr }); // Debug log
 
       if (ir?.ok) {
         setItems(ir.data || []);
@@ -165,6 +172,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         if (cryptoKey) setEncryptedCache("members", mr.data || [], cryptoKey);
       } else {
         console.error("Members fetch failed:", mr?.error);
+      }
+      if (cr?.ok) {
+        setCategories(cr.data || []);
+      } else {
+        console.error("Categories fetch failed:", cr?.error);
       }
     } catch (err) {
       console.error("Vault refresh error:", err);
@@ -185,6 +197,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       setItems([]);
       setFolders([]);
       setMembers([]);
+      setCategories([]);
       return;
     }
 
@@ -312,6 +325,28 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [cryptoKey],
   );
 
+  const mergeItems = useCallback(
+    async (targetId: string, sourceIds: string[]) => {
+      const res = await fetch("/api/items/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId, sourceIds }),
+      });
+      const data = await parseApiResponse(res);
+      if (data.ok) {
+        setItems((prev) => {
+          const sources = new Set(sourceIds);
+          const next = prev
+            .filter((it) => !sources.has(it._id))
+            .map((it) => (it._id === targetId ? data.data : it));
+          if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
+          return next;
+        });
+      }
+    },
+    [cryptoKey, parseApiResponse],
+  );
+
   const addFolder = useCallback(
     async (
       name: string,
@@ -334,20 +369,33 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [cryptoKey],
   );
 
-  const renameFolder = useCallback(
-    async (id: string, name: string) => {
-      await fetch(`/api/folders/${id}`, {
+  const updateFolder = useCallback(
+    async (
+      id: string,
+      payload: { name?: string; icon?: string; parentId?: string | null },
+    ) => {
+      const res = await fetch(`/api/folders/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(payload),
       });
-      setFolders((prev) => {
-        const next = prev.map((f) => (f._id === id ? { ...f, name } : f));
-        if (cryptoKey) setEncryptedCache("folders", next, cryptoKey);
-        return next;
-      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+
+      // If moved, we might need a full refresh to get all updated paths of descendants
+      if (payload.parentId !== undefined) {
+        await refresh();
+      } else {
+        setFolders((prev) => {
+          const next = prev.map((f) =>
+            f._id === id ? { ...f, ...payload } : f,
+          );
+          if (cryptoKey) setEncryptedCache("folders", next, cryptoKey);
+          return next;
+        });
+      }
     },
-    [cryptoKey],
+    [cryptoKey, refresh],
   );
 
   const deleteFolder = useCallback(
@@ -408,6 +456,46 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [cryptoKey],
   );
 
+  const addCategory = useCallback(
+    async (name: string): Promise<Category> => {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await parseApiResponse(res);
+      setCategories((prev) => [...prev, data.data]);
+      return data.data;
+    },
+    [parseApiResponse],
+  );
+
+  const updateCategory = useCallback(
+    async (id: string, name: string) => {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await parseApiResponse(res);
+      setCategories((prev) =>
+        prev.map((c) => (c._id === id ? data.data : c)),
+      );
+    },
+    [parseApiResponse],
+  );
+
+  const deleteCategory = useCallback(
+    async (id: string) => {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "DELETE",
+      });
+      await parseApiResponse(res);
+      setCategories((prev) => prev.filter((c) => c._id !== id));
+    },
+    [parseApiResponse],
+  );
+
   return (
     <VaultContext.Provider
       value={{
@@ -422,12 +510,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         addItemsBulk,
         updateItem,
         deleteItem,
+        mergeItems,
         addFolder,
-        renameFolder,
+        updateFolder,
         deleteFolder,
         addMember,
         updateMember,
         deleteMember,
+        categories,
+        addCategory,
+        updateCategory,
+        deleteCategory,
       }}
     >
       {children}

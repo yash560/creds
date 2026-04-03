@@ -8,8 +8,6 @@ import {
   EyeOff,
   Copy,
   Check,
-  Lock,
-  Mail,
   AlertTriangle,
 } from "lucide-react";
 import type { VaultItem } from "@/lib/types";
@@ -129,10 +127,10 @@ export default function SharePage() {
         setError(accessData.error || "Failed to load item content");
         setStep("error");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("verifyAccess error:", err);
       setError(
-        "Error accessing shared content: " + (err.message || "Unknown error"),
+        "Error accessing shared content: " + (err instanceof Error ? err.message : "Unknown error"),
       );
       setStep("error");
     } finally {
@@ -159,10 +157,10 @@ export default function SharePage() {
         setError(data.error || "Link not found or expired");
         setStep("error");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("fetchShareInfo error:", err);
       setError(
-        err.message === "Request timed out"
+        err instanceof Error && err.message === "Request timed out"
           ? "Server took too long to respond."
           : "Failed to load share",
       );
@@ -357,6 +355,19 @@ export default function SharePage() {
     const isCard = item.type === "card";
     const f = item.fields || {};
 
+    // Collect all documents/images
+    const allFiles = [];
+    if (item.fileData) {
+      allFiles.push({
+        data: item.fileData,
+        name: item.fileName || "Primary File",
+        mimeType: item.fileMimeType,
+      });
+    }
+    if (item.attachments && item.attachments.length > 0) {
+      allFiles.push(...item.attachments);
+    }
+
     return (
       <div
         style={{
@@ -512,6 +523,86 @@ export default function SharePage() {
                   style={{ color: "#8892a8", fontSize: 14, lineHeight: 1.6 }}
                 >
                   {f.notes}
+                </div>
+              </div>
+            )}
+
+            {/* Attachments Section */}
+            {allFiles.length > 0 && (
+              <div style={{ marginTop: 32 }}>
+                <div
+                  className="field-entry-label"
+                  style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}
+                >
+                  Attachments ({allFiles.length})
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
+                  }}
+                >
+                  {allFiles.map((file, idx) => (
+                    <div
+                      key={idx}
+                      className="glass-card"
+                      style={{ padding: 12, overflow: "hidden" }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "var(--text-muted)",
+                          marginBottom: 8,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {file.name}
+                      </div>
+                      {file.mimeType?.startsWith("image/") ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={file.data}
+                          alt={file.name}
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            borderRadius: 8,
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            padding: "32px 0",
+                            background: "rgba(255,255,255,0.02)",
+                            borderRadius: 8,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <span style={{ fontSize: 32 }}>📄</span>
+                          <div style={{ fontSize: 14 }}>
+                            {file.mimeType?.includes("pdf") ? "PDF Document" : "Encrypted File"}
+                          </div>
+                          <a
+                            href={file.data}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-ghost"
+                            style={{ fontSize: 12, height: 32 }}
+                          >
+                            Open in new tab
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

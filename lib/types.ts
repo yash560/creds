@@ -136,3 +136,11 @@ export interface SearchState {
   query: string;
   type: ItemType | 'all';
 }
+
+// ─── Category ─────────────────────────────────────────────────────────────────
+
+export interface Category {
+  _id: string;
+  name: string;
+  createdAt: string;
+}

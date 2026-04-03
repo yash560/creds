@@ -177,3 +177,23 @@ const ShareLinkSchema = new Schema<IShareLink>(
 
 export const ShareLinkModel: Model<IShareLink> =
   mongoose.models.ShareLink || mongoose.model<IShareLink>('ShareLink', ShareLinkSchema);
+
+// ─── Category ─────────────────────────────────────────────────────────────────
+
+export interface ICategory {
+  _id?: string | Types.ObjectId;
+  userId: string;
+  name: string;
+  createdAt: Date;
+}
+
+const CategorySchema = new Schema<ICategory>(
+  {
+    userId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+  },
+  { timestamps: true }
+);
+
+export const CategoryModel: Model<ICategory> =
+  mongoose.models.Category || mongoose.model<ICategory>('Category', CategorySchema);

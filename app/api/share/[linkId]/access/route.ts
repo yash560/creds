@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         try {
             const decoded = Buffer.from(token, 'base64').toString('utf-8');
             tokenData = JSON.parse(decoded) as TokenData;
-        } catch (_e: unknown) {
+        } catch {
             return NextResponse.json({ ok: false, error: 'Invalid token format' }, { status: 401 });
         }
 
@@ -113,6 +113,10 @@ export async function GET(req: NextRequest) {
         type: item.type,
         title: item.title,
         fields: filteredFields,
+        fileData: item.fileData,
+        fileName: item.fileName,
+        fileMimeType: item.fileMimeType,
+        attachments: item.attachments,
     };
 
     // Check role permissions
@@ -121,20 +125,8 @@ export async function GET(req: NextRequest) {
         accessibleItem.readonly = true;
     } else if (shareLink.role === 'download') {
         // Download: can download files
-        if (item.fileData) {
-            accessibleItem.fileData = item.fileData;
-            accessibleItem.fileName = item.fileName;
-            accessibleItem.fileMimeType = item.fileMimeType;
-        }
-        if (item.attachments?.length) {
-            accessibleItem.attachments = item.attachments;
-        }
     } else if (shareLink.role === 'edit') {
         // Edit: full access (but still can't delete or re-share)
-        accessibleItem.fileData = item.fileData;
-        accessibleItem.fileName = item.fileName;
-        accessibleItem.fileMimeType = item.fileMimeType;
-        accessibleItem.attachments = item.attachments;
         accessibleItem.editable = true;
     }
 
