@@ -133,10 +133,10 @@ export default function DocumentsPage() {
             {isSelectionMode ? (
               <>
                 <div style={{ marginRight: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-                  {selectedIds.size} selected
+                  {selectedIds.size} <span className="mobile-hide">selected</span>
                 </div>
                 <button className="btn btn-primary" onClick={handleMergeItems} disabled={selectedIds.size < 2}>
-                  Merge Selected
+                  Merge <span className="mobile-hide">Selected</span>
                 </button>
                 <button className="btn btn-ghost" onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}>
                   Cancel
@@ -148,13 +148,14 @@ export default function DocumentsPage() {
                   Select
                 </button>
                 <button className="btn btn-ghost" onClick={() => setCategoriesOpen(true)} title="Manage Categories">
-                  <Tag size={16} /> Manage Categories
+                  <Tag size={16} /> <span className="mobile-hide">Manage Categories</span>
                 </button>
                 <button className="btn btn-ghost" onClick={() => setZipOpen(true)} title="Import from ZIP">
-                  <Package size={16} /> Import ZIP
+                  <Package size={16} /> <span className="mobile-hide">Import ZIP</span>
                 </button>
                 <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-                  <Plus size={16} /> Add Document
+                  <Plus size={16} /> <span className="mobile-hide">Add Document</span>
+                  <span className="desktop-hide">Add</span>
                 </button>
               </>
             )}
@@ -224,7 +225,7 @@ export default function DocumentsPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, color: "var(--text-muted)", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Folders
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 16 }}>
                   {subFolders.map((f) => (
                     <div key={f._id} className="glass-card folder-card-interactive" onClick={() => setFolderId(f._id)}>
                       <div className="folder-card-icon">
