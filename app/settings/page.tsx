@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [role, setRole] = useState<Role>('viewer');
 
   const handleSyncContacts = async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contactsManager = (navigator as any).contacts;
     if (!contactsManager || typeof contactsManager.select !== 'function') {
       alert('Contact picking is not supported on this device/browser.');

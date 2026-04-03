@@ -11,7 +11,7 @@ import {
   memo,
 } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Camera, X, Crop, Check, Image, AlertTriangle } from "lucide-react";
+import { Camera, X, Crop, Check, AlertTriangle } from "lucide-react";
 import type { VaultItem, ItemType, Attachment } from "@/lib/types";
 import Modal from "./Modal";
 import ScanUploader from "./sections/ScanUploader";
@@ -204,21 +204,6 @@ export default function AddItemModal({
     [attachments],
   );
 
-  const handleCardFileChange = useCallback(
-    (side: CardSide) => async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      e.target.value = "";
-      const reader = new FileReader();
-      reader.onload = () => {
-        const data = reader.result as string;
-        upsertCardAttachment(side, data, file.type, file.name);
-      };
-      reader.readAsDataURL(file);
-    },
-    [],
-  );
-
   const upsertCardAttachment = useCallback(
     (side: CardSide, data: string, mimeType: string, fileName: string) => {
       const newAtt: Attachment = {
@@ -244,6 +229,21 @@ export default function AddItemModal({
       }, 0);
     },
     [],
+  );
+
+  const handleCardFileChange = useCallback(
+    (side: CardSide) => async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = "";
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = reader.result as string;
+        upsertCardAttachment(side, data, file.type, file.name);
+      };
+      reader.readAsDataURL(file);
+    },
+    [upsertCardAttachment],
   );
 
   const openCardCrop = useCallback(

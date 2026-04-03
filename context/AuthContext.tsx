@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear session when signing out
       clearSessionLocally();
     }
-  }, [step, user]);
+  }, [step, user, cryptoKey]);
 
   // ── Register ──────────────────────────────────────────────────────────────────
   const register = useCallback(

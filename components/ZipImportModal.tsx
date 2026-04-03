@@ -183,6 +183,7 @@ export default function ZipImportModal({ open, onClose, targetFolderId: initialT
           const errorMessage = err instanceof Error ? err.message : 'Unknown error';
           localSkipped.push({ 
             name: entry.name, 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             size: (entry as any)._data?.uncompressedSize || 0,
             reason: errorMessage
           });

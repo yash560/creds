@@ -156,6 +156,7 @@ async function runTesseractPass(imageUrl: string, psm: PSM, whitelist?: string):
   const worker = await createWorker('eng');
   try {
     await worker.setParameters({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tessedit_pageseg_mode: psm as any,
       ...(whitelist ? { tessedit_char_whitelist: whitelist } : {}),
     });
