@@ -1,5 +1,5 @@
 /**
- * Client-side encryption utilities for CredsHub.
+ * Client-side encryption utilities for Vaultora.
  * Uses Web Crypto API (AES-GCM) for high-performance encryption.
  */
 

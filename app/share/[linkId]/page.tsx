@@ -3,13 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  Eye,
-  EyeOff,
-  Copy,
-  Check,
-  AlertTriangle,
-} from "lucide-react";
+import { Eye, EyeOff, Copy, Check, AlertTriangle } from "lucide-react";
 import type { VaultItem } from "@/lib/types";
 
 interface ShareInfo {
@@ -130,7 +124,8 @@ export default function SharePage() {
     } catch (err) {
       console.error("verifyAccess error:", err);
       setError(
-        "Error accessing shared content: " + (err instanceof Error ? err.message : "Unknown error"),
+        "Error accessing shared content: " +
+          (err instanceof Error ? err.message : "Unknown error"),
       );
       setStep("error");
     } finally {
@@ -433,8 +428,8 @@ export default function SharePage() {
                   {f.cardNumber?.startsWith("4")
                     ? "VISA"
                     : f.cardNumber?.startsWith("5")
-                    ? "MASTERCARD"
-                    : "CARD"}
+                      ? "MASTERCARD"
+                      : "CARD"}
                 </div>
               </div>
 
@@ -532,7 +527,12 @@ export default function SharePage() {
               <div style={{ marginTop: 32 }}>
                 <div
                   className="field-entry-label"
-                  style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}
+                  style={{
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
                 >
                   Attachments ({allFiles.length})
                 </div>
@@ -588,7 +588,9 @@ export default function SharePage() {
                         >
                           <span style={{ fontSize: 32 }}>📄</span>
                           <div style={{ fontSize: 14 }}>
-                            {file.mimeType?.includes("pdf") ? "PDF Document" : "Encrypted File"}
+                            {file.mimeType?.includes("pdf")
+                              ? "PDF Document"
+                              : "Encrypted File"}
                           </div>
                           <a
                             href={file.data}
@@ -618,7 +620,7 @@ export default function SharePage() {
               letterSpacing: "0.02em",
             }}
           >
-            <p>🛡️ SECURE ONE-WAY SHARED LINK BY CREDSHUB</p>
+            <p>🛡️ SECURE ONE-WAY SHARED LINK BY Vaultora</p>
           </footer>
         </div>
       </div>
