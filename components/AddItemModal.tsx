@@ -28,6 +28,7 @@ interface AddItemModalProps {
   initialType?: ItemType;
   existing?: VaultItem | null;
   folders?: { _id: string; name: string }[];
+  members?: { _id: string; name: string; emoji?: string }[];
 }
 
 type CardSide = "front" | "back";
@@ -59,6 +60,7 @@ export default function AddItemModal({
   initialType = "password",
   existing,
   folders = [],
+  members = [],
 }: AddItemModalProps) {
   const [type, setType] = useState<ItemType>(
     existing?.type ?? initialType ?? "password",
@@ -69,6 +71,7 @@ export default function AddItemModal({
   const [fields, setFields] = useState<Record<string, string>>(
     existing?.fields ?? {},
   );
+  const [memberId, setMemberId] = useState(existing?.memberId ?? "");
 
   // Attachments state
   const [attachments, setAttachments] = useState<Attachment[]>(
@@ -163,6 +166,7 @@ export default function AddItemModal({
           .map((t) => t.trim())
           .filter(Boolean),
         folderId: folderId || null,
+        memberId: memberId || null,
         fields,
         attachments,
       };
@@ -178,7 +182,7 @@ export default function AddItemModal({
     } finally {
       setLoading(false);
     }
-  }, [validate, type, attachments, fields, tags, folderId, onSave, onClose]);
+  }, [validate, type, title, attachments, fields, tags, folderId, memberId, onSave, onClose]);
 
   const addAttachment = useCallback(
     (data: string, mime: string, name: string) => {
@@ -279,6 +283,7 @@ export default function AddItemModal({
     setTitle(existing?.title ?? "");
     setTags((existing?.tags ?? []).join(", "));
     setFolderId(existing?.folderId ?? "");
+    setMemberId(existing?.memberId ?? "");
     setFields(existing?.fields ? { ...existing.fields } : {});
     setAttachments(
       existing?.attachments
@@ -500,6 +505,25 @@ export default function AddItemModal({
               {folders.map((f) => (
                 <option key={f._id} value={f._id}>
                   {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Member */}
+        {members.length > 0 && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Member</label>
+            <select
+              className="form-select"
+              value={memberId}
+              onChange={(e) => setMemberId(e.target.value)}
+            >
+              <option value="">No member</option>
+              {members.map((m) => (
+                <option key={m._id} value={m._id}>
+                  {m.emoji} {m.name}
                 </option>
               ))}
             </select>

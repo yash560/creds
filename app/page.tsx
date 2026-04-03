@@ -18,7 +18,7 @@ const STATS = [
 ];
 
 export default function DashboardPage() {
-  const { items, addItem, updateItem, deleteItem, folders } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -74,7 +74,7 @@ export default function DashboardPage() {
           </div>
           <div className="item-grid">
             {favourites.slice(0,4).map(item => (
-              <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+              <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
             ))}
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function DashboardPage() {
         ) : (
           <div className="item-grid">
             {recent.map(item => (
-              <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+              <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
             ))}
           </div>
         )}
@@ -106,8 +106,8 @@ export default function DashboardPage() {
       <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add item" title="Add item">+</button>
 
       {/* Modals */}
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} folders={folders} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} folders={folders} members={members} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this item permanently?" />
     </>

@@ -49,6 +49,7 @@ interface IItem {
   }[];
   dedupeKey?: string;
   isFavourite: boolean;
+  memberId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +78,7 @@ const ItemSchema = new Schema<IItem>(
     }],
     dedupeKey: { type: String, index: true },
     isFavourite: { type: Boolean, default: false },
+    memberId: { type: String, default: null, index: true },
   },
   { timestamps: true }
 );

@@ -10,7 +10,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import type { VaultItem } from '@/lib/types';
 
 export default function ScanPage() {
-  const { items, addItem, updateItem, deleteItem, folders, searchQuery } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -48,14 +48,14 @@ export default function ScanPage() {
       ) : (
         <div className="item-grid">
           {filtered.map(item => (
-            <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+            <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
           ))}
         </div>
       )}
 
       <button className="fab" onClick={() => setAddOpen(true)} title="Add scan">📷</button>
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="scan" folders={folders} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="scan" folders={folders} members={members} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} />
     </>

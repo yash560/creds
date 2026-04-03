@@ -9,6 +9,7 @@ import { detectCardBrand } from '@/lib/card-ocr-parse';
 
 interface ItemCardProps {
   item: VaultItem;
+  members?: { _id: string; name: string; emoji?: string }[];
   onEdit: (item: VaultItem) => void;
   onDelete: (id: string) => void;
   onToggleFav?: (item: VaultItem) => void;
@@ -46,7 +47,7 @@ function formatCardNumber(num: string) {
   return (digits.match(/.{1,4}/g) || []).join(' ');
 }
 
-export default function ItemCard({ item, onEdit, onDelete, onToggleFav, onClick }: ItemCardProps) {
+export default function ItemCard({ item, members = [], onEdit, onDelete, onToggleFav, onClick }: ItemCardProps) {
   const { Icon, cls } = TYPE_ICONS[item.type] ?? TYPE_ICONS.document;
   const subtitle = getSubtitle(item);
   const copyVal = getCopyValue(item);
@@ -54,6 +55,12 @@ export default function ItemCard({ item, onEdit, onDelete, onToggleFav, onClick 
     (item.type === 'card' ? item.fields : {}) as Record<string, string>;
   const brandKey = (cardType || detectCardBrand(cardNumber) || 'default').toLowerCase();
   const brandLabel = brandKey === 'default' ? 'CARD' : brandKey.toUpperCase();
+
+  const memberEmoji = useMemo(() => {
+    if (!item.memberId || !members.length) return null;
+    return members.find(m => m._id === item.memberId)?.emoji;
+  }, [item.memberId, members]);
+
   const cardRows = useMemo(() => {
     const rows = [
       {
@@ -100,7 +107,10 @@ export default function ItemCard({ item, onEdit, onDelete, onToggleFav, onClick 
               <Icon size={18} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="item-title">{item.title}</div>
+              <div className="item-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {item.title}
+                {memberEmoji && <span className="member-indicator" title="Assigned member">{memberEmoji}</span>}
+              </div>
               {subtitle && <div className="item-subtitle">{subtitle}</div>}
             </div>
             <div className="item-card-actions">
@@ -188,7 +198,10 @@ export default function ItemCard({ item, onEdit, onDelete, onToggleFav, onClick 
               <Icon size={18} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="item-title">{item.title}</div>
+              <div className="item-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {item.title}
+                {memberEmoji && <span className="member-indicator" title="Assigned member">{memberEmoji}</span>}
+              </div>
               {subtitle && <div className="item-subtitle">{subtitle}</div>}
             </div>
             <div className="item-card-actions">

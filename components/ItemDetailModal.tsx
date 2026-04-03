@@ -27,7 +27,7 @@ export default function ItemDetailModal({
   onClose,
   onEdit,
 }: ItemDetailModalProps) {
-  const { folders, updateItem } = useVault();
+  const { folders, members, updateItem } = useVault();
   const [showMove, setShowMove] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
@@ -121,6 +121,46 @@ export default function ItemDetailModal({
                   {f.name}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        {item.memberId && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 14px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 12,
+              marginBottom: 16,
+            }}
+          >
+            <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
+              Assigned to:
+            </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                background: "rgba(99, 102, 241, 0.1)",
+                borderRadius: 99,
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--accent-primary)",
+              }}
+            >
+              <span>
+                {members.find((m) => m._id === item.memberId)?.emoji || "👤"}
+              </span>
+              <span>
+                {members.find((m) => m._id === item.memberId)?.name ||
+                  "Unknown"}
+              </span>
             </div>
           </div>
         )}

@@ -26,7 +26,7 @@ const CATEGORIES = [
 ];
 
 export default function DocumentsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, searchQuery } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -52,76 +52,78 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="page-layout">
-      <div className="page-header-grid">
-        <button
-          type="button"
-          className="panel-toggle"
-          onClick={() => setFolderPanelOpen((p) => !p)}
-          aria-label="Toggle folders"
-        >
-          <Menu size={16} /> Folders
-        </button>
-        <div className="title-block">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="item-type-icon icon-document" style={{ width: 36, height: 36 }}><FileText size={17} /></div>
-            <h1 className="page-title">Documents</h1>
+    <div className="page-layout animate-fadeIn">
+      {/* Refined Header */}
+      <header className="page-header-new">
+        <div className="header-main-row">
+          <div className="title-with-icon">
+            <div className="item-type-icon icon-document">
+              <FileText size={20} />
+            </div>
+            <div>
+              <h1 className="page-title">Documents</h1>
+              <p className="page-subtitle">{filtered.length} document{filtered.length !== 1 ? 's' : ''}</p>
+            </div>
           </div>
-          <p className="page-subtitle">{filtered.length} document{filtered.length !== 1 ? 's' : ''}</p>
-        </div>
-        <nav className="breadcrumb-row" aria-label="Breadcrumb">
-          <Link href="/" className="breadcrumb-link">
-            Vault
-          </Link>
-          <span className="breadcrumb-separator">/</span>
-          <Link href="/documents" className="breadcrumb-link active">
-            Documents
-          </Link>
-        </nav>
-      </div>
-
-      <div className="primary-action-row">
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-          <Plus size={15} /> Add Document
-        </button>
-      </div>
-
-      <div className="page-grid">
-        <aside className={`folder-panel ${folderPanelOpen ? 'open' : ''}`}>
-          <div className="panel-header">
-            <span>Folders</span>
+          
+          <div className="header-actions">
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+              <Plus size={16} /> Add Document
+            </button>
             <button
               type="button"
-              className="panel-close"
-              onClick={() => setFolderPanelOpen(false)}
-              aria-label="Close folders"
+              className="panel-toggle mobile-only"
+              onClick={() => setFolderPanelOpen((p) => !p)}
             >
-              <X size={18} />
+              <Menu size={16} />
             </button>
           </div>
-          <FolderTree activeFolderId={folderId} onSelect={handleFolderSelect} />
+        </div>
+
+        <nav className="breadcrumb-nav" aria-label="Breadcrumb">
+          <Link href="/" className="breadcrumb-item">Vault</Link>
+          <span className="breadcrumb-divider">/</span>
+          <span className="breadcrumb-item active">Documents</span>
+        </nav>
+      </header>
+
+      <div className="page-content-grid">
+        {/* Sidebar for Desktop */}
+        <aside className={`folder-sidebar-new ${folderPanelOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <h3>Folders</h3>
+            <button className="mobile-only close-btn" onClick={() => setFolderPanelOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="folder-tree-container">
+            <FolderTree activeFolderId={folderId} onSelect={handleFolderSelect} />
+          </div>
         </aside>
 
-        <section className="content-panel">
-          <div className="filter-pills" role="toolbar" aria-label="Document categories">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                className={`btn ${category === c ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ))}
+        {/* Main Content */}
+        <main className="main-content-area">
+          <div className="category-scroll-wrapper">
+            <div className="category-pills" role="toolbar">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  className={`pill-btn ${category === c ? 'active' : ''}`}
+                  onClick={() => setCategory(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📄</div>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>No documents</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Store Aadhaar, PAN, Passport and more</p>
+            <div className="empty-state-card">
+              <div className="empty-icon">📂</div>
+              <h3>No documents found</h3>
+              <p>Organize your IDs, certificates, and records securely.</p>
               <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-                <Plus size={14} /> Add Document
+                <Plus size={16} /> Add Document
               </button>
             </div>
           ) : (
@@ -130,6 +132,7 @@ export default function DocumentsPage() {
                 <ItemCard
                   key={item._id}
                   item={item}
+                  members={members}
                   onClick={setDetailItem}
                   onEdit={setEditItem}
                   onDelete={setDeleteId}
@@ -140,19 +143,16 @@ export default function DocumentsPage() {
               ))}
             </div>
           )}
-        </section>
-
-        {folderPanelOpen && (
-          <div
-            className="panel-backdrop"
-            role="presentation"
-            onClick={() => setFolderPanelOpen(false)}
-          />
-        )}
+        </main>
       </div>
 
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="document" folders={folders} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
+      {/* Backdrop & Modals */}
+      {folderPanelOpen && (
+        <div className="sidebar-backdrop-new" onClick={() => setFolderPanelOpen(false)} />
+      )}
+
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="document" folders={folders} members={members} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this document permanently?" />
     </div>

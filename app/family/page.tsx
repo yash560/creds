@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { useVault } from '@/context/VaultContext';
 import Modal from '@/components/Modal';
 import ItemCard from '@/components/ItemCard';
@@ -12,18 +12,22 @@ import RoleBadge from '@/components/RoleBadge';
 import type { FamilyMember, VaultItem, Role } from '@/lib/types';
 
 export default function FamilyPage() {
-  const { members, addMember, items, addItem, updateItem, deleteItem, folders } = useVault();
+  const { members, addMember, updateMember, deleteMember, items, addItem, updateItem, deleteItem, folders } = useVault();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editMemberItem, setEditMemberItem] = useState<FamilyMember | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<FamilyMember | null>(null);
+  
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('👤');
   const [role, setRole] = useState<Role>('viewer');
+  
   const [selected, setSelected] = useState<FamilyMember | null>(null);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const memberItems = selected ? items.filter(i => i.tags?.includes(selected.name)) : [];
+  const memberItems = selected ? items.filter(i => i.memberId === selected._id) : [];
 
   const EMOJIS = ['👤','👨','👩','👴','👵','👦','👧','🧑','👨‍💼','👩‍💼'];
 
@@ -50,15 +54,39 @@ export default function FamilyPage() {
           ) : members.map(m => (
             <div
               key={m._id}
-              className={`glass-card`}
-              style={{ padding: '14px 16px', cursor: 'pointer', border: selected?._id === m._id ? '1px solid var(--accent-primary)' : undefined }}
+              className={`glass-card member-card-new ${selected?._id === m._id ? 'active' : ''}`}
               onClick={() => setSelected(m._id === selected?._id ? null : m)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ fontSize: 26 }}>{m.emoji}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{m.name}</div>
+                  <div className="member-name">{m.name}</div>
                   <RoleBadge role={m.role} />
+                </div>
+                <div className="member-actions-hover">
+                  <button 
+                    className="action-btn-new" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditMemberItem(m);
+                      setName(m.name);
+                      setEmoji(m.emoji || '👤');
+                      setRole(m.role);
+                    }}
+                    title="Edit Member"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button 
+                    className="action-btn-new danger" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMemberToDelete(m);
+                    }}
+                    title="Delete Member"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -87,8 +115,8 @@ export default function FamilyPage() {
               {memberItems.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">📄</div>
-                  <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No items tagged for {selected.name}</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Add items and tag them with &quot;{selected.name}&quot;</p>
+                  <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No items assigned to {selected.name}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Add items and assign them to {selected.name} using the member field.</p>
                 </div>
               ) : (
                 <div className="item-grid">
@@ -143,12 +171,69 @@ export default function FamilyPage() {
       </Modal>
 
       {/* Add item for member */}
-      <AddItemModal open={addItemOpen} onClose={() => setAddItemOpen(false)} initialType="document" folders={folders}
-        onSave={async (p) => { await addItem({ ...p, tags: [...(p.tags || []), selected?.name || ''] }); }}
+      <AddItemModal 
+        open={addItemOpen} 
+        onClose={() => setAddItemOpen(false)} 
+        initialType="document" 
+        folders={folders}
+        members={members}
+        existing={{ memberId: selected?._id } as unknown as VaultItem}
+        onSave={async (p) => { await addItem({ ...p, memberId: selected?._id }); }}
       />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} />
+
+      {/* Edit Member Modal */}
+      <Modal open={!!editMemberItem} onClose={() => setEditMemberItem(null)} title="Edit Family Member"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setEditMemberItem(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={async () => {
+              if (!name.trim()) return;
+              await updateMember(editMemberItem!._id, { name: name.trim(), emoji, role });
+              setEditMemberItem(null);
+            }}>Save Changes</button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Name</label>
+            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mom, Dad, Yash" />
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Avatar</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {EMOJIS.map(e => (
+                <button key={e} onClick={() => setEmoji(e)} style={{ fontSize: 24, width: 40, height: 40, borderRadius: 10, border: emoji === e ? '2px solid var(--accent-primary)' : '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer' }}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Role</label>
+            <select className="form-select" value={role} onChange={e => setRole(e.target.value as Role)}>
+              <option value="admin">Admin (full access)</option>
+              <option value="editor">Editor (add & edit)</option>
+              <option value="viewer">Viewer (read only)</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Member Confirm */}
+      <ConfirmDialog 
+        open={!!memberToDelete} 
+        onClose={() => setMemberToDelete(null)} 
+        onConfirm={async () => {
+          await deleteMember(memberToDelete!._id);
+          if (selected?._id === memberToDelete?._id) setSelected(null);
+          setMemberToDelete(null);
+        }} 
+        message={`Delete ${memberToDelete?.name}? Associated documents will remain but lose their member link.`}
+      />
     </>
   );
 }

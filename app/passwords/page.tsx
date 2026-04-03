@@ -25,7 +25,7 @@ function titleFromChromeRow(row: ChromePasswordRow): string {
 }
 
 export default function PasswordsPage() {
-  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, searchQuery } = useVault();
+  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
@@ -142,6 +142,7 @@ export default function PasswordsPage() {
                 <ItemCard 
                   key={item._id} 
                   item={item} 
+                  members={members}
                   onClick={setDetailItem} 
                   onEdit={setEditItem} 
                   onDelete={setDeleteId} 
@@ -170,8 +171,8 @@ export default function PasswordsPage() {
         onBulkImport={handleBulkImport}
       />
 
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="password" folders={folders} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
+      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} initialType="password" folders={folders} members={members} onSave={async (p) => { await addItem(p); }} />
+      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this password permanently?" />
     </div>

@@ -39,6 +39,7 @@ export interface VaultItem {
   attachments?: Attachment[] | null
   dedupeKey?: string;
   isFavourite?: boolean;
+  memberId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
