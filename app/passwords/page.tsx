@@ -11,6 +11,7 @@ import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
+import { GridSkeleton } from '@/components/SkeletonLoader';
 import type { VaultItem } from '@/lib/types';
 
 function titleFromChromeRow(row: ChromePasswordRow): string {
@@ -25,7 +26,7 @@ function titleFromChromeRow(row: ChromePasswordRow): string {
 }
 
 export default function PasswordsPage() {
-  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery } = useVault();
+  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery, isLoading } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
@@ -126,7 +127,9 @@ export default function PasswordsPage() {
         </aside>
 
         <section className="content-panel">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <GridSkeleton count={12} />
+          ) : filtered.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🔑</div>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>No passwords yet</h3>

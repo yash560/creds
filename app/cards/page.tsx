@@ -7,10 +7,11 @@ import ItemCard from '@/components/ItemCard';
 import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { GridSkeleton } from '@/components/SkeletonLoader';
 import type { VaultItem } from '@/lib/types';
 
 export default function CardsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, isLoading } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -38,7 +39,9 @@ export default function CardsPage() {
         <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Card</button>
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <GridSkeleton count={6} />
+      ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">💳</div>
           <h3 style={{ fontSize: 16, fontWeight: 600 }}>No cards yet</h3>

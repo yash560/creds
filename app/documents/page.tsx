@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
 import ZipImportModal from '@/components/ZipImportModal';
 import CategoryManagerModal from '@/components/CategoryManagerModal';
+import { GridSkeleton } from '@/components/SkeletonLoader';
 import type { VaultItem } from '@/lib/types';
 
 export default function DocumentsPage() {
@@ -24,6 +25,7 @@ export default function DocumentsPage() {
     categories,
     mergeItems,
     searchQuery,
+    isLoading,
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [zipOpen, setZipOpen] = useState(false);
@@ -246,7 +248,9 @@ export default function DocumentsPage() {
                    Documents
                  </div>
               )}
-              {filtered.length === 0 && subFolders.length === 0 ? (
+              {isLoading ? (
+                <GridSkeleton count={8} />
+              ) : filtered.length === 0 && subFolders.length === 0 ? (
                 <div className="empty-state-card">
                   <div className="empty-icon">📂</div>
                   <h3>No items found</h3>

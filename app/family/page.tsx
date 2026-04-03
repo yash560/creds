@@ -9,10 +9,11 @@ import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import AddItemModal from '@/components/AddItemModal';
 import RoleBadge from '@/components/RoleBadge';
+import { GridSkeleton, ListSkeleton } from '@/components/SkeletonLoader';
 import type { FamilyMember, VaultItem, Role } from '@/lib/types';
 
 export default function FamilyPage() {
-  const { members, addMember, updateMember, deleteMember, items, addItem, updateItem, deleteItem, folders } = useVault();
+  const { members, addMember, updateMember, deleteMember, items, addItem, updateItem, deleteItem, folders, isLoading } = useVault();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [editMemberItem, setEditMemberItem] = useState<FamilyMember | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<FamilyMember | null>(null);
@@ -47,7 +48,9 @@ export default function FamilyPage() {
       <div style={{ display: 'flex', gap: 20 }}>
         {/* Member list */}
         <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {members.length === 0 ? (
+          {isLoading ? (
+            <ListSkeleton count={4} />
+          ) : members.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 16px', fontSize: 13 }}>
               No family members yet
             </div>
@@ -112,7 +115,9 @@ export default function FamilyPage() {
                 </div>
                 <button className="btn btn-primary" onClick={() => setAddItemOpen(true)}><Plus size={14} /> Add Doc</button>
               </div>
-              {memberItems.length === 0 ? (
+              {isLoading ? (
+                <GridSkeleton count={4} />
+              ) : memberItems.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">📄</div>
                   <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>No items assigned to {selected.name}</p>
