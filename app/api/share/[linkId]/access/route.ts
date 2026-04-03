@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ShareLinkModel, ItemModel } from '@/lib/models';
 import { decryptFields } from '@/lib/crypto';
-import type { Attachment } from '@/lib/types';
 
 interface TokenData {
     linkId: string;
@@ -34,38 +33,21 @@ interface AccessibleItem {
 
 // GET /api/share/[linkId]/access - Get shared item content (requires verification token)
 export async function GET(req: NextRequest) {
-  await connectDB();
-  const pathSegments = req.nextUrl.pathname.split('/').filter(Boolean);
-  const shareIndex = pathSegments.findIndex((segment) => segment === 'share');
-  const linkId = shareIndex >= 0 ? pathSegments[shareIndex + 1] : undefined;
-  if (!linkId) {
-    return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
-  }
-  const authHeader = req.headers.get('authorization');
+    await connectDB();
+    const path = req.nextUrl.pathname;
+    const parts = path.split('/');
+    const shareIdx = parts.lastIndexOf('share');
+    const linkId = shareIdx !== -1 && parts[shareIdx + 1] ? parts[shareIdx + 1] : undefined;
+    if (!linkId) {
+        return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
+    }
+    const authHeader = req.headers.get('authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return NextResponse.json({ ok: false, error: 'Access token required' }, { status: 401 });
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    let tokenData: TokenData;
-
-    try {
-        const decoded = Buffer.from(token, 'base64').toString('utf-8');
-        tokenData = JSON.parse(decoded) as TokenData;
-    } catch (e: unknown) {
-        return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 });
-    }
-
-    if (!tokenData.verified || tokenData.linkId !== linkId) {
-        return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401 });
-    }
-
-    // Check token age (1 hour expiry)
-    if (Date.now() - tokenData.timestamp > 60 * 60 * 1000) {
-        return NextResponse.json({ ok: false, error: 'Token expired' }, { status: 401 });
-    }
-
     const shareLink = await ShareLinkModel.findOne({ linkId }).lean();
     if (!shareLink) {
         return NextResponse.json({ ok: false, error: 'Link not found' }, { status: 404 });
@@ -74,6 +56,32 @@ export async function GET(req: NextRequest) {
     // Check if expired
     if (shareLink.expiresAt && shareLink.expiresAt < new Date()) {
         return NextResponse.json({ ok: false, error: 'Link has expired' }, { status: 410 });
+    }
+
+    let tokenData: TokenData;
+
+    if (token === 'open') {
+        if (shareLink.type !== 'open') {
+            return NextResponse.json({ ok: false, error: 'Verification required' }, { status: 401 });
+        }
+        // Create dummy token data for open access
+        tokenData = { linkId, verified: true, timestamp: Date.now() };
+    } else {
+        try {
+            const decoded = Buffer.from(token, 'base64').toString('utf-8');
+            tokenData = JSON.parse(decoded) as TokenData;
+        } catch (_e: unknown) {
+            return NextResponse.json({ ok: false, error: 'Invalid token format' }, { status: 401 });
+        }
+
+        if (!tokenData.verified || tokenData.linkId !== linkId) {
+            return NextResponse.json({ ok: false, error: 'Invalid token content' }, { status: 401 });
+        }
+
+        // Check token age (1 hour expiry)
+        if (Date.now() - tokenData.timestamp > 60 * 60 * 1000) {
+            return NextResponse.json({ ok: false, error: 'Token expired' }, { status: 401 });
+        }
     }
 
     // Get item
@@ -88,12 +96,23 @@ export async function GET(req: NextRequest) {
         : (item.fields as Record<string, string>);
     const fields = await decryptFields(raw);
 
+    // Apply shared fields filtering
+    let filteredFields = fields;
+    if (shareLink.sharedFields && shareLink.sharedFields.length > 0) {
+        filteredFields = Object.keys(fields)
+            .filter((key) => shareLink.sharedFields!.includes(key))
+            .reduce((obj, key) => {
+                obj[key] = fields[key];
+                return obj;
+            }, {} as Record<string, string>);
+    }
+
     // Apply role-based restrictions
     const accessibleItem: AccessibleItem = {
         _id: item._id?.toString(),
         type: item.type,
         title: item.title,
-        fields,
+        fields: filteredFields,
     };
 
     // Check role permissions

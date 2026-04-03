@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import { ShareLinkModel, ItemModel } from '@/lib/models';
-import { decryptFields } from '@/lib/crypto';
 // GET /api/share/[linkId] - Get share link info (NO content yet)
 export async function GET(req: NextRequest) {
     await connectDB();
-    const pathSegments = req.nextUrl.pathname.split('/').filter(Boolean);
-    const shareIndex = pathSegments.findIndex((segment) => segment === 'share');
-    const linkId = shareIndex >= 0 ? pathSegments[shareIndex + 1] : undefined;
+    const path = req.nextUrl.pathname;
+    const parts = path.split('/');
+    const shareIdx = parts.lastIndexOf('share');
+    const linkId = shareIdx !== -1 && parts[shareIdx + 1] ? parts[shareIdx + 1] : undefined;
     if (!linkId) {
         return NextResponse.json({ ok: false, error: 'Missing linkId' }, { status: 400 });
     }

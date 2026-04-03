@@ -1,32 +1,46 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { VaultProvider } from "@/context/VaultContext";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MobileNav from "@/components/MobileNav";
 import LoginGate from "./login-gate";
+import { usePathname } from "next/navigation";
 
 function AppShell({ children }: { children: ReactNode }) {
   const { isAuthenticated, step } = useAuth();
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  console.log(
-    "AppShell render - isAuthenticated:",
-    isAuthenticated,
-    "step:",
-    step,
-  ); // Debug log
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isSharePage = pathname?.startsWith("/share");
+
+  // Keep logs minimal for production-like feel but helpful for debug
+  if (mounted) {
+    console.log("AppShell path:", pathname, "isShare:", isSharePage);
+  }
+
+  if (!mounted) {
+    return null;
+  }
+
+  // Bypassing login gate for share results
+  if (isSharePage) {
+    return <main className="animate-fadeIn">{children}</main>;
+  }
 
   // Still loading or auth step required
   if (!isAuthenticated || step !== "authenticated") {
-    console.log("Showing LoginGate"); // Debug log
     return <LoginGate />;
   }
 
-  console.log("Mounting VaultProvider"); // Debug log
   return (
     <VaultProvider>
       <div className="app-shell">

@@ -142,6 +142,7 @@ export interface IShareLink {
   role: 'read' | 'download' | 'edit';
   pinHash?: string;            // bcrypt of PIN for semi-encrypted
   allowedEmails?: string[];    // for fully-encrypted access control
+  sharedFields?: string[];    // fields from the item that this link can access
   expiresAt?: Date;
   accessLog?: {
     ip?: string;
@@ -161,6 +162,7 @@ const ShareLinkSchema = new Schema<IShareLink>(
     role: { type: String, enum: ['read', 'download', 'edit'], default: 'read' },
     pinHash: { type: String },
     allowedEmails: [{ type: String }],
+    sharedFields: [{ type: String }],
     expiresAt: { type: Date },
     accessLog: [{
       ip: { type: String },

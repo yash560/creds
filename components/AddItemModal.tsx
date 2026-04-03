@@ -833,14 +833,43 @@ const CardFields = memo(function CardFields({
       </div>
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">
-          Card Network (Visa, Mastercard, Amex, etc.)
+          Card Network
         </label>
-        <input
-          className="form-input"
-          value={fields.cardType || ""}
-          onChange={(e) => setField("cardType", e.target.value.toLowerCase())}
-          placeholder="visa, mastercard, amex, discover, rupay"
-        />
+        <select
+          className="form-select"
+          value={
+            ['visa', 'mastercard', 'amex', 'discover', 'rupay', ''].includes(fields.cardType || '')
+              ? (fields.cardType || '')
+              : 'other'
+          }
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === 'other') {
+              setField("cardType", "other_value"); // Placeholder to trigger show other
+            } else {
+              setField("cardType", val);
+            }
+          }}
+        >
+          <option value="">Select network</option>
+          <option value="visa">Visa</option>
+          <option value="mastercard">Mastercard</option>
+          <option value="amex">American Express</option>
+          <option value="discover">Discover</option>
+          <option value="rupay">RuPay</option>
+          <option value="other">Other</option>
+        </select>
+        
+        {(!['visa', 'mastercard', 'amex', 'discover', 'rupay', ''].includes(fields.cardType || '') || fields.cardType === 'other_value') && (
+          <input
+            className="form-input"
+            style={{ marginTop: 8 }}
+            value={fields.cardType === 'other_value' ? '' : (fields.cardType || "")}
+            onChange={(e) => setField("cardType", e.target.value.toLowerCase())}
+            placeholder="Enter custom network..."
+            autoFocus
+          />
+        )}
       </div>
       <div className="form-group" style={{ marginBottom: 0 }}>
         <label className="form-label">PIN (Optional)</label>

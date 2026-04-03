@@ -17,13 +17,21 @@ function generateLinkId(): string {
 }
 
 // GET /api/share - List all share links for current user
-export async function GET() {
+export async function GET(req: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
+    const { searchParams } = new URL(req.url);
+    const itemId = searchParams.get('itemId');
+
     await connectDB();
-    const links = await ShareLinkModel.find({ userId: session.userId })
-        .select('linkId itemId type role expiresAt createdAt')
+    const query: { userId: string; itemId?: string } = { userId: session.userId };
+    if (itemId) {
+        query.itemId = itemId;
+    }
+
+    const links = await ShareLinkModel.find(query)
+        .select('linkId itemId type role expiresAt createdAt sharedFields')
         .sort({ createdAt: -1 })
         .lean();
 
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
     await connectDB();
-    const { itemId, type, role, pin, allowedEmails, expiresInDays } = await req.json();
+    const { itemId, type, role, pin, allowedEmails, expiresInDays, sharedFields } = await req.json();
 
     // Verify item ownership
     const item = await ItemModel.findOne({ _id: itemId, userId: session.userId });
@@ -71,6 +79,7 @@ export async function POST(req: NextRequest) {
         type,
         role,
         pinHash,
+        sharedFields: sharedFields || [],
         allowedEmails: allowedEmails || [],
         expiresAt: expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000) : undefined,
     });
