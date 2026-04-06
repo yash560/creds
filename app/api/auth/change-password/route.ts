@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify current password
+    if (!user.passwordHash) {
+        return NextResponse.json({ ok: false, error: 'Your account uses Google login. You do not have a password set.' }, { status: 400 });
+    }
+
     const valid = await verifySecret(currentPassword, user.passwordHash);
     if (!valid) {
         return NextResponse.json({ ok: false, error: 'Current password is incorrect' }, { status: 401 });

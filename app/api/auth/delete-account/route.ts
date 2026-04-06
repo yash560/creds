@@ -21,10 +21,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 });
     }
 
-    // Verify password for security
-    const valid = await verifySecret(password, user.passwordHash);
-    if (!valid) {
-        return NextResponse.json({ ok: false, error: 'Incorrect password' }, { status: 401 });
+    // Verify password for security (if set)
+    if (user.passwordHash) {
+        const valid = await verifySecret(password, user.passwordHash);
+        if (!valid) {
+            return NextResponse.json({ ok: false, error: 'Incorrect password' }, { status: 401 });
+        }
+    } else if (user.googleId) {
+        // If it's a Google user, we don't strictly require a password verify for deletion
+        // as they are already authenticated via session.
+    } else {
+        return NextResponse.json({ ok: false, error: 'Password not set' }, { status: 400 });
     }
 
     // Delete all user data
