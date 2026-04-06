@@ -34,26 +34,28 @@ function AppShell({ children }: { children: ReactNode }) {
   }
 
   const isAuthPage = pathname === "/signin" || pathname === "/signup";
+  const isLandingPage = pathname === "/";
 
-  // Still loading or auth step required
+  // Case 1: NOT authenticated
   if (!isAuthenticated || step !== "authenticated") {
-    // If not on an auth page or share page, redirect to signin
-    if (!isAuthPage && !isSharePage) {
-      // If we're on root and not authenticated, redirect to signin/signup
-      if (pathname === "/") {
-        redirect(hasUsers ? "/signin" : "/signup");
-      }
-      // For any other page, redirect to signin
-      redirect("/signin");
+    // Landing Page and Share Pages are public
+    if (isLandingPage || isSharePage) {
+      return <main className="animate-fadeIn">{children}</main>;
     }
     
-    // If we ARE on an auth page, allow rendering LoginGate
-    return <LoginGate />;
+    // Auth pages show the LoginGate directly
+    if (isAuthPage) {
+      return <LoginGate />;
+    }
+    
+    // Any other page redirects to signin
+    redirect("/signin");
   }
 
-  // Redirect away from auth pages if already authenticated
-  if (isAuthPage && isAuthenticated && step === "authenticated") {
-    redirect("/");
+  // Case 2: AUTHENTICATED
+  // Redirect away from landing page or auth pages if already logged in
+  if ((isLandingPage || isAuthPage) && isAuthenticated && step === "authenticated") {
+    redirect("/dashboard");
   }
 
   return (

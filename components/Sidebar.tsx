@@ -31,7 +31,7 @@ interface SidebarProps {
 }
 
 const NAV = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Passwords", href: "/passwords", icon: KeyRound },
   { label: "Cards", href: "/cards", icon: CreditCard },
   { label: "Documents", href: "/documents", icon: FileText },
@@ -56,7 +56,7 @@ export default function Sidebar({
   const [helpOpen, setHelpOpen] = useState(false);
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
   return (
     <>

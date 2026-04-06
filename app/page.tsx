@@ -1,144 +1,405 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { KeyRound, FileText, ScanLine, Star, Plus, Clock, CreditCard, Search } from 'lucide-react';
-import { useVault } from '@/context/VaultContext';
-import Link from 'next/link';
-import AddItemModal from '@/components/AddItemModal';
-import ItemDetailModal from '@/components/ItemDetailModal';
-import ItemCard from '@/components/ItemCard';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { filterItems } from '@/lib/search-utils';
-import type { VaultItem } from '@/lib/types';
+import { useRef } from "react";
+import Link from "next/link";
+import {
+  Shield,
+  Lock,
+  Eye,
+  Zap,
+  Globe,
+  Users,
+  ArrowRight,
+  Star,
+  CheckCircle,
+  KeyRound,
+  CreditCard,
+  FileText,
+  ScanLine,
+} from "lucide-react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-const STATS = [
-  { label: 'Passwords', type: 'password', icon: KeyRound, color: 'var(--accent-primary)', bg: 'rgba(99,102,241,0.12)' },
-  { label: 'Cards', type: 'card', icon: CreditCard, color: 'var(--accent-amber)', bg: 'rgba(245,158,11,0.12)' },
-  { label: 'Documents', type: 'document', icon: FileText, color: 'var(--accent-emerald)', bg: 'rgba(16,185,129,0.12)' },
-  { label: 'Scans', type: 'scan', icon: ScanLine, color: 'var(--accent-secondary)', bg: 'rgba(139,92,246,0.12)' },
-];
+gsap.registerPlugin(ScrollTrigger);
 
-export default function DashboardPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
-  const [addOpen, setAddOpen] = useState(false);
-  const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
-  const [editItem, setEditItem] = useState<VaultItem | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+export default function LandingPage() {
+  const container = useRef<HTMLDivElement>(null);
 
-  const recent = useMemo(() => [...items].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 8), [items]);
-  const favourites = useMemo(() => items.filter(i => i.isFavourite), [items]);
+  useGSAP(
+    () => {
+      // Hero Animations
+      const tl = gsap.timeline();
+      tl.from(".hero-badge", {
+        y: 20,
+        opacity: 0,
+        duration: 0.6,
+        ease: "power3.out",
+      })
+        .from(
+          ".hero-title",
+          { y: 40, opacity: 0, duration: 0.8, ease: "power3.out" },
+          "-=0.4",
+        )
+        .from(
+          ".hero-desc",
+          { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" },
+          "-=0.6",
+        )
+        .from(
+          ".hero-cta",
+          { scale: 0.9, opacity: 0, duration: 0.6, ease: "back.out(1.7)" },
+          "-=0.4",
+        )
+        .from(
+          ".hero-visual",
+          { y: 100, opacity: 0, duration: 1.2, ease: "power4.out" },
+          "-=0.8",
+        );
 
-  const searchResults = useMemo(() => {
-    return filterItems(items, searchQuery, folders, members);
-  }, [items, searchQuery, folders, members]);
+      // Section Reveals
+      gsap.utils.toArray<HTMLElement>(".reveal-section").forEach((section) => {
+        gsap.from(section, {
+          scrollTrigger: {
+            trigger: section,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+          y: 60,
+          opacity: 0,
+          duration: 1,
+          ease: "power3.out",
+        });
+      });
+
+      // Feature Cards Stagger
+      gsap.from(".feature-card", {
+        scrollTrigger: {
+          trigger: ".features-grid",
+          start: "top 75%",
+        },
+        y: 40,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.15,
+        ease: "power2.out",
+      });
+
+      // Floating animation for visual elements
+      gsap.to(".floating", {
+        y: -20,
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+      });
+
+      // Logo rotation on scroll
+      gsap.to(".security-lock", {
+        scrollTrigger: {
+          trigger: ".security-section",
+          start: "top 90%",
+          end: "bottom 10%",
+          scrub: 1,
+        },
+        rotate: 360,
+        scale: 1.1,
+      });
+    },
+    { scope: container },
+  );
 
   return (
-    <>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Your personal credential vault</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-          <Plus size={16} /> Add Item
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="stats-grid">
-        {STATS.map(({ label, type, icon: Icon, color, bg }) => (
-          <Link key={type} href={`/${type === 'password' ? 'passwords' : type + 's'}`} style={{ textDecoration: 'none' }}>
-            <div className="stat-card" style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon size={18} style={{ color }} />
-                </div>
-                <div className="stat-label">{label}</div>
-              </div>
-              <div className="stat-value" style={{ color }}>{items.filter(i => i.type === type).length}</div>
+    <div ref={container} className="landing-container">
+      {/* Navigation */}
+      <nav className="landing-nav">
+        <div className="nav-content">
+          <div className="nav-logo">
+            <div className="logo-icon">
+              <Shield size={20} color="white" />
             </div>
+            <span>Vaultora</span>
+          </div>
+          <div className="nav-links">
+            <Link href="/signin" className="nav-link">
+              Sign In
+            </Link>
+            <Link href="/signup" className="btn btn-primary nav-cta">
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <div className="hero-badge">
+            <Star
+              size={14}
+              fill="var(--accent-amber)"
+              color="var(--accent-amber)"
+            />
+            <span>Used by 50,000+ security experts</span>
+          </div>
+          <h1 className="hero-title">
+            Your Digital Life, <br />
+            <span className="gradient-text">Encrypted & Infinite.</span>
+          </h1>
+          <p className="hero-desc">
+            Vaultora is the world's most advanced credential manager. Store
+            passwords, documents, and payment cards in an unbreakable,
+            zero-knowledge private vault.
+          </p>
+          <div className="hero-cta">
+            <Link href="/signup" className="btn btn-primary hero-btn">
+              Create Your Free Vault <ArrowRight size={18} />
+            </Link>
+            <p className="hero-sub-cta">
+              No credit card required. Free forever for individuals.
+            </p>
+          </div>
+        </div>
+
+        <div className="hero-visual">
+          <div className="visual-card floating">
+            <div className="visual-icons">
+              <KeyRound className="v-icon icon-1" />
+              <CreditCard className="v-icon icon-2" />
+              <FileText className="v-icon icon-3" />
+              <ScanLine className="v-icon icon-4" />
+            </div>
+            <div className="visual-lines">
+              <div className="v-line" style={{ width: "80%" }}></div>
+              <div className="v-line" style={{ width: "60%" }}></div>
+              <div className="v-line" style={{ width: "90%" }}></div>
+            </div>
+          </div>
+          <div className="visual-blur shadow-glow"></div>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section className="security-section reveal-section">
+        <div className="section-header">
+          <div className="security-lock">
+            <Lock size={40} color="var(--accent-primary)" />
+          </div>
+          <h2 className="section-title">Zero-Knowledge Architecture</h2>
+          <p className="section-desc">
+            We don't know your password. We can't see your data. Even if we were
+            compromised, your vault remains a black box to everyone but you.
+          </p>
+        </div>
+
+        <div className="security-grid">
+          <div className="sec-item">
+            <div className="sec-icon">
+              <Shield size={24} />
+            </div>
+            <h3>AES-256 Bit Encryption</h3>
+            <p>
+              Military-grade encryption for all your stored credentials and
+              documents.
+            </p>
+          </div>
+          <div className="sec-item">
+            <div className="sec-icon">
+              <Zap size={24} />
+            </div>
+            <h3>Quantum-Resistant</h3>
+            <p>
+              Built with future-proof algorithms that stand against the next
+              generation of threats.
+            </p>
+          </div>
+          <div className="sec-item">
+            <div className="sec-icon">
+              <Globe size={24} />
+            </div>
+            <h3>Localized Keys</h3>
+            <p>
+              Your decryption keys never leave your device. Your data is yours
+              alone.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Showcase */}
+      <section className="features-section reveal-section">
+        <div className="section-header">
+          <h2 className="section-title">
+            Everything You Need <br /> To Stay Secure
+          </h2>
+        </div>
+
+        <div className="features-grid">
+          <div className="feature-card password">
+            <div className="f-icon">
+              <KeyRound size={28} />
+            </div>
+            <h3>Secure Passwords</h3>
+            <p>
+              Generate unbreakable passwords and store them with custom fields
+              and secure notes.
+            </p>
+            <ul className="f-list">
+              <li>
+                <CheckCircle size={14} /> Password Audit
+              </li>
+              <li>
+                <CheckCircle size={14} /> Passkey Support
+              </li>
+              <li>
+                <CheckCircle size={14} /> Auto-fill Anywhere
+              </li>
+            </ul>
+          </div>
+
+          <div className="feature-card card">
+            <div className="f-icon">
+              <CreditCard size={28} />
+            </div>
+            <h3>PCI-Compliant Cards</h3>
+            <p>
+              Store your credit and debit cards with beautiful visuals and
+              quick-copy functionality.
+            </p>
+            <ul className="f-list">
+              <li>
+                <CheckCircle size={14} /> Virtual Previews
+              </li>
+              <li>
+                <CheckCircle size={14} /> Expiry Notifications
+              </li>
+              <li>
+                <CheckCircle size={14} /> CVV Protection
+              </li>
+            </ul>
+          </div>
+
+          <div className="feature-card document">
+            <div className="f-icon">
+              <FileText size={28} />
+            </div>
+            <h3>Private Documents</h3>
+            <p>
+              Upload passports, ID cards, and sensitive files. All encrypted
+              before they reach us.
+            </p>
+            <ul className="f-list">
+              <li>
+                <CheckCircle size={14} /> PDF/Image Support
+              </li>
+              <li>
+                <CheckCircle size={14} /> Multi-page Scanning
+              </li>
+              <li>
+                <CheckCircle size={14} /> Secure Attachments
+              </li>
+            </ul>
+          </div>
+
+          <div className="feature-card scan">
+            <div className="f-icon">
+              <ScanLine size={28} />
+            </div>
+            <h3>Intelligent OCR</h3>
+            <p>
+              Scan physical documents. Our built-in AI extracts the data and
+              stores it automatically.
+            </p>
+            <ul className="f-list">
+              <li>
+                <CheckCircle size={14} /> ID Auto-Detection
+              </li>
+              <li>
+                <CheckCircle size={14} /> Text Recognition
+              </li>
+              <li>
+                <CheckCircle size={14} /> Metadata Extraction
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Collaboration Section */}
+      <section className="collab-section reveal-section">
+        <div className="collab-content">
+          <h2 className="section-title">
+            Built for Families <br /> & Teams
+          </h2>
+          <p className="section-desc">
+            Securely share items with your family or colleagues without exposing
+            raw passwords. Revoke access at any time with one click.
+          </p>
+          <div className="collab-stats">
+            <div className="stat">
+              <Users size={32} />
+              <div className="stat-info">
+                <h4>Granular Permissions</h4>
+                <p>Read-only, Admin, or Full Control.</p>
+              </div>
+            </div>
+            <div className="stat">
+              <Globe size={32} />
+              <div className="stat-info">
+                <h4>Sync Everywhere</h4>
+                <p>Desktop, Mobile, and Browser.</p>
+              </div>
+            </div>
+          </div>
+          <Link href="/signup" className="btn btn-secondary">
+            Learn About Sharing
           </Link>
-        ))}
-        <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(244,63,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Star size={18} style={{ color: 'var(--accent-rose)' }} />
-            </div>
-            <div className="stat-label">Favourites</div>
-          </div>
-          <div className="stat-value" style={{ color: 'var(--accent-rose)' }}>{favourites.length}</div>
         </div>
-      </div>
-
-      {searchQuery ? (
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Search size={16} style={{ color: 'var(--accent-primary)' }} />
-            <h2 style={{ fontSize: 16, fontWeight: 600 }}>Search Results</h2>
-          </div>
-          {searchResults.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>No matches found</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Try different keywords or check for typos</p>
-            </div>
-          ) : (
-            <div className="item-grid">
-              {searchResults.map(item => (
-                <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
-              ))}
-            </div>
-          )}
+        <div className="collab-visual shadow-glow">
+          <div className="v-circle"></div>
+          <div className="v-circle-2"></div>
+          <Shield
+            size={120}
+            className="floating"
+            color="rgba(99, 102, 241, 0.4)"
+          />
         </div>
-      ) : (
-        <>
-          {/* Favourites */}
-          {favourites.length > 0 && (
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <Star size={16} style={{ color: 'var(--accent-amber)' }} />
-                <h2 style={{ fontSize: 16, fontWeight: 600 }}>Favourites</h2>
-              </div>
-              <div className="item-grid">
-                {favourites.slice(0,4).map(item => (
-                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
-                ))}
-              </div>
-            </div>
-          )}
+      </section>
 
-          {/* Recent */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Clock size={16} style={{ color: 'var(--text-secondary)' }} />
-              <h2 style={{ fontSize: 16, fontWeight: 600 }}>Recent</h2>
-            </div>
-            {recent.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">🔐</div>
-                <h3 style={{ fontSize: 18, fontWeight: 600 }}>Vault is empty</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Add your first password, card, or document to get started.</p>
-                <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Item</button>
-              </div>
-            ) : (
-              <div className="item-grid">
-                {recent.map(item => (
-                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
-                ))}
-              </div>
-            )}
+      {/* CTA Section */}
+      <section className="cta-section reveal-section">
+        <div className="cta-card">
+          <h2 className="cta-title">
+            Ready to take control <br /> of your security?
+          </h2>
+          <p className="cta-desc">
+            Join millions of users who trust Vaultora with their most sensitive
+            data.
+          </p>
+          <div className="cta-buttons">
+            <Link href="/signup" className="btn btn-primary cta-btn">
+              Get Started Now
+            </Link>
+            <Link href="/signin" className="btn btn-ghost cta-btn">
+              Already have a vault?
+            </Link>
           </div>
-        </>
-      )}
+        </div>
+      </section>
 
-      {/* FAB */}
-      <button className="fab" onClick={() => setAddOpen(true)} aria-label="Add item" title="Add item">+</button>
-
-      {/* Modals */}
-      <AddItemModal open={addOpen} onClose={() => setAddOpen(false)} folders={folders} members={members} onSave={async (p) => { await addItem(p); }} />
-      <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
-      <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
-      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this item permanently?" />
-    </>
+      {/* Footer */}
+      <footer className="landing-footer">
+        <div className="footer-content">
+          <div className="footer-logo">
+            <Shield size={24} color="var(--accent-primary)" />
+            <span>Vaultora</span>
+          </div>
+          <p className="footer-credits">
+            © 2026 Vaultora Vaults. All rights reserved. <br /> Built for
+            absolute privacy.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 const NAV = [
-  { label: "Home", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Passwords", href: "/passwords", icon: KeyRound },
   { label: "Cards", href: "/cards", icon: CreditCard },
   { label: "Docs", href: "/documents", icon: FileText },
@@ -26,7 +26,7 @@ export default function MobileNav() {
         <Link
           key={href}
           href={href}
-          className={`mobile-nav-item ${(href === "/" ? pathname === "/" : pathname.startsWith(href)) ? "active" : ""}`}
+          className={`mobile-nav-item ${(href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href)) ? "active" : ""}`}
         >
           <Icon size={20} />
           <span>{label}</span>
