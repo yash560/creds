@@ -9,11 +9,11 @@ export async function GET(req: NextRequest) {
   const error = searchParams.get('error');
 
   if (error) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?error=${error}`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=${error}`);
   }
 
   if (!code) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?error=no_code`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=no_code`);
   }
 
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const { access_token } = await tokenRes.json();
 
     if (!access_token) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?error=token_exchange_failed`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=token_exchange_failed`);
     }
 
     // 2. Fetch user profile from Google
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     const googleUser = await userRes.json();
 
     if (!googleUser.email) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?error=no_email_returned`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=no_email_returned`);
     }
 
     await connectDB();
@@ -86,6 +86,6 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (err: unknown) {
     console.error('Google OAuth Error:', err);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?error=server_error`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=server_error`);
   }
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Shield,
   Eye,
@@ -357,6 +359,16 @@ export default function LoginGate() {
     clearError,
   } = useAuth();
 
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname === "/signup" && step === "signin") {
+      goToRegister();
+    } else if (pathname === "/signin" && step === "register" && hasUsers) {
+      goToSignIn();
+    }
+  }, [pathname, step, hasUsers, goToRegister, goToSignIn]);
+
   // Registration state
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
@@ -568,21 +580,18 @@ export default function LoginGate() {
                 }}
               >
                 Already have an account?{" "}
-                <button
-                  type="button"
+                <Link
+                  href="/signin"
                   className="btn btn-ghost"
                   style={{
                     padding: "2px 6px",
                     fontSize: 13,
                     display: "inline",
                   }}
-                  onClick={() => {
-                    clearError();
-                    goToSignIn();
-                  }}
+                  onClick={clearError}
                 >
                   Sign in
-                </button>
+                </Link>
               </p>
             )}
           </form>
@@ -722,17 +731,14 @@ export default function LoginGate() {
               }}
             >
               New here?{" "}
-              <button
-                type="button"
+              <Link
+                href="/signup"
                 className="btn btn-ghost"
                 style={{ padding: "2px 6px", fontSize: 13, display: "inline" }}
-                onClick={() => {
-                  clearError();
-                  goToRegister();
-                }}
+                onClick={clearError}
               >
                 Create an account
-              </button>
+              </Link>
             </p>
           </form>
         </div>

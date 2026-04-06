@@ -7,11 +7,11 @@ import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MobileNav from "@/components/MobileNav";
 import LoginGate from "./login-gate";
-import { usePathname } from "next/navigation";
+import { usePathname, redirect } from "next/navigation";
 import { SoundProvider } from "@/context/SoundContext";
 
 function AppShell({ children }: { children: ReactNode }) {
-  const { isAuthenticated, step } = useAuth();
+  const { isAuthenticated, step, hasUsers } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -24,11 +24,6 @@ function AppShell({ children }: { children: ReactNode }) {
 
   const isSharePage = pathname?.startsWith("/share");
 
-  // Keep logs minimal for production-like feel but helpful for debug
-  if (mounted) {
-    console.log("AppShell path:", pathname, "isShare:", isSharePage);
-  }
-
   if (!mounted) {
     return null;
   }
@@ -38,9 +33,27 @@ function AppShell({ children }: { children: ReactNode }) {
     return <main className="animate-fadeIn">{children}</main>;
   }
 
+  const isAuthPage = pathname === "/signin" || pathname === "/signup";
+
   // Still loading or auth step required
   if (!isAuthenticated || step !== "authenticated") {
+    // If not on an auth page or share page, redirect to signin
+    if (!isAuthPage && !isSharePage) {
+      // If we're on root and not authenticated, redirect to signin/signup
+      if (pathname === "/") {
+        redirect(hasUsers ? "/signin" : "/signup");
+      }
+      // For any other page, redirect to signin
+      redirect("/signin");
+    }
+    
+    // If we ARE on an auth page, allow rendering LoginGate
     return <LoginGate />;
+  }
+
+  // Redirect away from auth pages if already authenticated
+  if (isAuthPage && isAuthenticated && step === "authenticated") {
+    redirect("/");
   }
 
   return (
@@ -49,13 +62,13 @@ function AppShell({ children }: { children: ReactNode }) {
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileSidebarOpen}
-          onToggle={() => setCollapsed((p) => !p)}
+          onToggle={() => setCollapsed((p: boolean) => !p)}
           onClose={() => setMobileSidebarOpen(false)}
         />
         <div className={`main-content ${collapsed ? "sidebar-collapsed" : ""}`}>
           <TopBar
             collapsed={collapsed}
-            onToggleSidebar={() => setMobileSidebarOpen((p) => !p)}
+            onToggleSidebar={() => setMobileSidebarOpen((p: boolean) => !p)}
           />
           <main className="page-body animate-fadeIn">{children}</main>
         </div>
