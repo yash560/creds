@@ -51,6 +51,7 @@ export interface AuthContextValue {
   signOut: () => Promise<void>;
   goToRegister: () => void;
   goToSignIn: () => void;
+  signInWithGoogle: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -331,6 +332,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStep("signin");
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    setError("");
+    try {
+      const res = await fetch("/api/auth/google/url");
+      const data = await res.json();
+      if (data.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Failed to start Google Sign In");
+      }
+    } catch {
+      setError("Failed to start Google Sign In");
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -350,6 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         goToRegister,
         goToSignIn,
+        signInWithGoogle,
         clearError: () => setError(""),
       }}
     >

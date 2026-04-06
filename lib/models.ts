@@ -5,7 +5,9 @@ import mongoose, { Schema, Model, Types } from 'mongoose';
 export interface IUser {
   _id: Types.ObjectId;
   email: string;
-  passwordHash: string;       // bcrypt of full password
+  passwordHash?: string;       // bcrypt of full password (optional for Google users)
+  googleId?: string;          // Google user ID
+  avatarUrl?: string;         // Google avatar
   pinHash: string | null;     // bcrypt of 4-digit quick PIN
   vaultName: string;
   createdAt: Date;
@@ -15,7 +17,9 @@ export interface IUser {
 const UserSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: { type: String }, // Optional for Google users
+    googleId: { type: String, unique: true, sparse: true },
+    avatarUrl: { type: String },
     pinHash: { type: String, default: null },
     vaultName: { type: String, default: 'My Vault' },
   },
