@@ -2949,7 +2949,7 @@ section {
   font-size: 14px;
   color: var(--text-secondary);
 }
-.f-list li :global(svg) {
+.f-list li svg {
   color: var(--accent-emerald);
 }
 
@@ -2973,7 +2973,7 @@ section {
   align-items: flex-start;
   gap: 20px;
 }
-.stat :global(svg) {
+.stat svg {
   color: var(--accent-primary);
 }
 .stat-info h4 {

@@ -11,7 +11,7 @@ import { usePathname, redirect } from "next/navigation";
 import { SoundProvider } from "@/context/SoundContext";
 
 function AppShell({ children }: { children: ReactNode }) {
-  const { isAuthenticated, step, hasUsers } = useAuth();
+  const { isAuthenticated, step } = useAuth();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -41,6 +41,32 @@ function AppShell({ children }: { children: ReactNode }) {
     // Landing Page and Share Pages are public
     if (isLandingPage || isSharePage) {
       return <main className="animate-fadeIn">{children}</main>;
+    }
+    
+    // While loading, show a smooth splash/loading screen instead of redirecting
+    if (step === "loading") {
+      return (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '100vh',
+          background: 'var(--bg-base)',
+          color: 'var(--text-primary)',
+          flexDirection: 'column',
+          gap: 16
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: '2px solid var(--border-subtle)',
+            borderTopColor: 'var(--accent-primary)',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Securely loading your vault...</p>
+        </div>
+      );
     }
     
     // Auth pages show the LoginGate directly
