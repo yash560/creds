@@ -43,6 +43,19 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+button,
+[role="button"],
+a {
+  cursor: pointer;
 }
 
 html {
@@ -429,6 +442,27 @@ body {
   left: 64px;
 }
 
+.topbar-member-btn {
+  transition: all var(--transition);
+}
+@media (hover: hover) {
+  .topbar-member-btn:not(.active):hover {
+    border-color: var(--accent-primary) !important;
+  }
+}
+
+.topbar-dropdown-item {
+  transition: background-color var(--transition);
+}
+@media (hover: hover) {
+  .topbar-dropdown-item:hover {
+    background-color: var(--bg-hover) !important;
+  }
+}
+.topbar-dropdown-item:active {
+  background-color: var(--bg-hover) !important;
+}
+
 .hamburger-btn {
   border: none;
   background: none;
@@ -453,13 +487,13 @@ body {
 }
 
 .search-input {
-  width: 200%;
+  width: 100%;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 99px;
   padding: 8px 16px 8px 40px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   transition: all var(--transition);
 }
@@ -565,6 +599,20 @@ body {
   transform: scale(1.1) rotate(90deg);
 }
 
+.btn:active,
+.item-card:active,
+.nav-item:active,
+.action-btn:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+@media (hover: none) {
+  *:hover {
+    all: unset;
+  }
+}
+
 /* ─── Item Cards ─────────────────────────────────────────────────────────────── */
 .item-grid {
   display: grid;
@@ -665,11 +713,17 @@ body {
   display: flex;
   gap: 4px;
   margin-left: auto;
-  opacity: 0;
+  opacity: 1;
   transition: opacity var(--transition);
 }
-.item-card:hover .item-card-actions {
-  opacity: 1;
+
+@media (hover: hover) {
+  .item-card-actions {
+    opacity: 0;
+  }
+  .item-card:hover .item-card-actions {
+    opacity: 1;
+  }
 }
 
 .card-summary {
@@ -1120,7 +1174,7 @@ body {
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
   transition:
@@ -2108,12 +2162,17 @@ body {
 .member-actions-hover {
   display: flex;
   gap: 4px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s ease;
 }
 
-.member-card-new:hover .member-actions-hover {
-  opacity: 1;
+@media (hover: hover) {
+  .member-actions-hover {
+    opacity: 0;
+  }
+  .member-card-new:hover .member-actions-hover {
+    opacity: 1;
+  }
 }
 
 .action-btn-new {
@@ -2545,11 +2604,22 @@ body {
   z-index: 20;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   color: transparent;
-  opacity: 0;
-  transform: scale(0.8);
+  opacity: 1;
+  transform: scale(1);
 }
 
-.item-card:hover .selection-indicator-v2,
+@media (hover: hover) {
+  .selection-indicator-v2 {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  .item-card:hover .selection-indicator-v2,
+  .selection-indicator-v2.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .selection-indicator-v2.visible {
   opacity: 1;
   transform: scale(1);

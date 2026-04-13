@@ -153,16 +153,7 @@ export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
                     transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                     transform: memberFilter === member._id ? "scale(1.1)" : "scale(1)",
                   }}
-                  onMouseEnter={(e) => {
-                    if (memberFilter !== member._id) {
-                      e.currentTarget.style.borderColor = "var(--accent-primary)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (memberFilter !== member._id) {
-                      e.currentTarget.style.borderColor = "var(--border)";
-                    }
-                  }}
+                  className={`topbar-member-btn ${memberFilter === member._id ? 'active' : ''}`}
                 >
                   {member.emoji || "👤"}
                 </button>
@@ -351,12 +342,7 @@ export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
                   transition: "background-color 0.2s",
                   color: "var(--text-primary)",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                className="topbar-dropdown-item"
               >
                 <User size={16} /> Profile
               </button>
@@ -380,12 +366,7 @@ export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
                   transition: "background-color 0.2s",
                   color: "var(--text-primary)",
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                className="topbar-dropdown-item"
               >
                 <Settings size={16} /> Settings
               </button>
@@ -408,12 +389,7 @@ export default function TopBar({ collapsed, onToggleSidebar }: TopBarProps) {
                     transition: "background-color 0.2s",
                     color: "var(--accent-rose)",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "var(--bg-hover)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "transparent")
-                  }
+                  className="topbar-dropdown-item logout"
                 >
                   <LogOut size={16} /> Logout
                 </button>
