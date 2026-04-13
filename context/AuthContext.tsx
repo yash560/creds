@@ -20,7 +20,10 @@ type AuthStep =
   | "authenticated"; // fully unlocked
 
 interface AuthUser {
+  id?: string;
+  name?: string;
   email: string;
+  phone?: string;
   vaultName: string;
   hasPinSet: boolean;
 }
@@ -52,6 +55,7 @@ export interface AuthContextValue {
   goToRegister: () => void;
   goToSignIn: () => void;
   signInWithGoogle: () => Promise<void>;
+  updateUser: (data: Partial<AuthUser>) => void;
   clearError: () => void;
 }
 
@@ -347,6 +351,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateUser = useCallback((data: Partial<AuthUser>) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -367,6 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         goToRegister,
         goToSignIn,
         signInWithGoogle,
+        updateUser,
         clearError: () => setError(""),
       }}
     >

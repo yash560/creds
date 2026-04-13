@@ -29,7 +29,10 @@ export async function GET() {
     hasPinSet: !!user.pinHash,
     sessionKey: session.sessionKey,
     user: {
+      id: user._id.toString(),
+      name: user.name,
       email: user.email,
+      phone: user.phone,
       vaultName: user.vaultName,
       hasPinSet: !!user.pinHash,
     },
@@ -73,7 +76,10 @@ export async function POST(req: NextRequest) {
     ok: true,
     sessionKey, // Send to frontend for encryption
     user: {
+      id: user._id.toString(),
+      name: user.name,
       email: user.email,
+      phone: user.phone,
       vaultName: user.vaultName,
       hasPinSet: !!user.pinHash,
     },

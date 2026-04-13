@@ -11,16 +11,37 @@ import {
   EyeOff,
   CheckCircle,
   Clock,
+  Save,
+  Mail,
+  Phone,
+  Layout,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
 import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ProfilePage() {
-  const { user, cryptoKey, lock } = useAuth();
+  const { user, cryptoKey, lock, updateUser } = useAuth();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [deleteDataOpen, setDeleteDataOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  // Profile state
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [vaultName, setVaultName] = useState(user?.vaultName || "");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState("");
+  const [profileError, setProfileError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setPhone(user.phone || "");
+      setVaultName(user.vaultName || "");
+    }
+  }, [user]);
 
   // Change password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -84,10 +105,41 @@ export default function ProfilePage() {
         setChangePasswordOpen(false);
         setPasswordSuccess("");
       }, 2000);
-    } catch (err) {
+    } catch (error: unknown) {
+      console.error("Password change error:", error);
       setPasswordErrors({ submit: "An error occurred. Please try again." });
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileLoading(true);
+    setProfileSuccess("");
+    setProfileError("");
+
+    try {
+      const res = await fetch("/api/auth/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, vaultName }),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        setProfileError(data.error || "Failed to update profile");
+        return;
+      }
+
+      updateUser(data.user);
+      setProfileSuccess("Profile updated successfully!");
+      setTimeout(() => setProfileSuccess(""), 3000);
+    } catch (err) {
+      console.error("Profile update error:", err);
+      setProfileError("An error occurred. Please try again.");
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -118,6 +170,7 @@ export default function ProfilePage() {
       await lock();
       window.location.href = "/";
     } catch (err) {
+      console.error("Account delete error:", err);
       setDeletePasswordError("An error occurred. Please try again.");
     } finally {
       setDeleteLoading(false);
@@ -147,161 +200,285 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Account Information */}
-      <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
-        <h2
-          style={{
-            fontSize: 16,
-            fontWeight: 600,
-            marginBottom: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <Shield size={18} /> Account Information
-        </h2>
+      <form onSubmit={handleUpdateProfile}>
+        <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <h2
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                margin: 0,
+              }}
+            >
+              <Shield size={18} /> Account Information
+            </h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 24,
-          }}
-        >
-          {/* Email */}
-          <div>
-            <div className="form-label" style={{ marginBottom: 8 }}>
-              Email Address
-            </div>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={profileLoading}
+              style={{ padding: "8px 16px", height: "auto" }}
+            >
+              {profileLoading ? (
+                "Saving..."
+              ) : (
+                <>
+                  <Save size={14} style={{ marginRight: 6 }} />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+
+          {profileSuccess && (
             <div
               style={{
-                fontSize: 15,
-                fontWeight: 500,
-                padding: "12px 14px",
-                background: "var(--bg-card)",
+                padding: "10px 14px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border)",
+                background: "rgba(34,197,94,0.1)",
+                color: "var(--accent-emerald)",
+                fontSize: 13,
+                marginBottom: 20,
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
               }}
             >
-              {user?.email}
-              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                verified
-              </span>
+              <CheckCircle size={14} /> {profileSuccess}
             </div>
-          </div>
+          )}
 
-          {/* Vault Name */}
-          <div>
-            <div className="form-label" style={{ marginBottom: 8 }}>
-              Vault Name
-            </div>
+          {profileError && (
             <div
               style={{
-                fontSize: 15,
-                fontWeight: 500,
-                padding: "12px 14px",
-                background: "var(--bg-card)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              {user?.vaultName}
-            </div>
-          </div>
-
-          {/* Security Status */}
-          <div>
-            <div className="form-label" style={{ marginBottom: 8 }}>
-              Security Status
-            </div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
                 padding: "10px 14px",
                 borderRadius: "var(--radius-md)",
-                background: cryptoKey
-                  ? "rgba(16,185,129,0.1)"
-                  : "rgba(245,158,11,0.1)",
-                border: cryptoKey
-                  ? "1px solid rgba(16,185,129,0.3)"
-                  : "1px solid rgba(245,158,11,0.3)",
-                color: cryptoKey
-                  ? "var(--accent-emerald)"
-                  : "var(--accent-amber)",
+                background: "rgba(239,68,68,0.1)",
+                color: "var(--accent-rose)",
                 fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {cryptoKey ? (
-                <CheckCircle size={14} />
-              ) : (
-                <AlertTriangle size={14} />
-              )}
-              {cryptoKey ? "End-to-End Encrypted" : "Standard Security"}
-            </div>
-          </div>
-
-          {/* Account Status */}
-          <div>
-            <div className="form-label" style={{ marginBottom: 8 }}>
-              Account Status
-            </div>
-            <div
-              style={{
-                display: "inline-flex",
+                marginBottom: 20,
+                display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "10px 14px",
-                borderRadius: "var(--radius-md)",
-                background: "rgba(34,197,94,0.1)",
-                border: "1px solid rgba(34,197,94,0.3)",
-                color: "var(--accent-emerald)",
-                fontSize: 13,
-                fontWeight: 600,
               }}
             >
-              <CheckCircle size={14} />
-              Active
+              <AlertTriangle size={14} /> {profileError}
             </div>
-          </div>
+          )}
 
-          {/* PIN Status */}
-          <div>
-            <div className="form-label" style={{ marginBottom: 8 }}>
-              Quick Access PIN
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: 24,
+            }}
+          >
+            {/* Full Name */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ marginBottom: 8 }}>
+                Full Name
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: 38 }}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                />
+                <User
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-secondary)",
+                  }}
+                />
+              </div>
             </div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "10px 14px",
-                borderRadius: "var(--radius-md)",
-                background: user?.hasPinSet
-                  ? "rgba(34,197,94,0.1)"
-                  : "rgba(156,163,175,0.1)",
-                border: user?.hasPinSet
-                  ? "1px solid rgba(34,197,94,0.3)"
-                  : "1px solid rgba(156,163,175,0.3)",
-                color: user?.hasPinSet
-                  ? "var(--accent-emerald)"
-                  : "var(--text-secondary)",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {user?.hasPinSet ? <CheckCircle size={14} /> : <Lock size={14} />}
-              {user?.hasPinSet ? "PIN Set" : "No PIN Set"}
+
+            {/* Email (Read Only) */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ marginBottom: 8 }}>
+                Email Address
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="email"
+                  className="form-input"
+                  style={{
+                    paddingLeft: 38,
+                    background: "var(--bg-muted)",
+                    cursor: "not-allowed",
+                  }}
+                  value={user?.email || ""}
+                  disabled
+                  placeholder="Email address"
+                />
+                <Mail
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-secondary)",
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    color: "var(--accent-emerald)",
+                  }}
+                >
+                  Verified
+                </span>
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ marginBottom: 8 }}>
+                Phone Number
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="tel"
+                  className="form-input"
+                  style={{ paddingLeft: 38 }}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. +1 234 567 8900"
+                />
+                <Phone
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-secondary)",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Vault Name */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ marginBottom: 8 }}>
+                Vault Name
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ paddingLeft: 38 }}
+                  value={vaultName}
+                  onChange={(e) => setVaultName(e.target.value)}
+                  placeholder="My Vault"
+                />
+                <Layout
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "var(--text-secondary)",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Security Status */}
+            <div>
+              <div className="form-label" style={{ marginBottom: 8 }}>
+                Security Status
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-md)",
+                  background: cryptoKey
+                    ? "rgba(16,185,129,0.1)"
+                    : "rgba(245,158,11,0.1)",
+                  border: cryptoKey
+                    ? "1px solid rgba(16,185,129,0.3)"
+                    : "1px solid rgba(245,158,11,0.3)",
+                  color: cryptoKey
+                    ? "var(--accent-emerald)"
+                    : "var(--accent-amber)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {cryptoKey ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <AlertTriangle size={14} />
+                )}
+                {cryptoKey ? "End-to-End Encrypted" : "Standard Security"}
+              </div>
+            </div>
+
+            {/* PIN Status */}
+            <div>
+              <div className="form-label" style={{ marginBottom: 8 }}>
+                Quick Access PIN
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 14px",
+                  borderRadius: "var(--radius-md)",
+                  background: user?.hasPinSet
+                    ? "rgba(34,197,94,0.1)"
+                    : "rgba(156,163,175,0.1)",
+                  border: user?.hasPinSet
+                    ? "1px solid rgba(34,197,94,0.3)"
+                    : "1px solid rgba(156,163,175,0.3)",
+                  color: user?.hasPinSet
+                    ? "var(--accent-emerald)"
+                    : "var(--text-secondary)",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {user?.hasPinSet ? (
+                  <CheckCircle size={14} />
+                ) : (
+                  <Lock size={14} />
+                )}
+                {user?.hasPinSet ? "PIN Set" : "No PIN Set"}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </form>
 
       {/* Security Settings */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>

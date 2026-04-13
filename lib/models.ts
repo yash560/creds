@@ -4,7 +4,9 @@ import mongoose, { Schema, Model, Types } from 'mongoose';
 
 export interface IUser {
   _id: Types.ObjectId;
+  name?: string;               // Display name
   email: string;
+  phone?: string;             // Phone number
   passwordHash?: string;       // bcrypt of full password (optional for Google users)
   googleId?: string;          // Google user ID
   avatarUrl?: string;         // Google avatar
@@ -16,7 +18,9 @@ export interface IUser {
 
 const UserSchema = new Schema<IUser>(
   {
+    name: { type: String, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    phone: { type: String, trim: true },
     passwordHash: { type: String }, // Optional for Google users
     googleId: { type: String, unique: true, sparse: true },
     avatarUrl: { type: String },

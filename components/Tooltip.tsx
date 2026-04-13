@@ -27,6 +27,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
   }, []);
 
   const show = useCallback(() => {
+    if (window.matchMedia('(hover: none)').matches) return;
     reposition();
     setOpen(true);
   }, [reposition]);
