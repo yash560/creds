@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { FolderModel } from '@/lib/models';
+import { FolderModel, FamilyMemberModel, UserModel } from '@/lib/models';
 import { getSession } from '@/lib/session';
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -8,16 +8,22 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   const { id } = await props.params;
   await connectDB();
+
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwner = user?.joinedVaultId || session.userId;
+  const isOwner = !user?.joinedVaultId;
+
+  if (!isOwner) {
+    const member = await FamilyMemberModel.findOne({ userId: activeVaultOwner, memberUserId: session.userId }).lean();
+    if (!member || (member.role !== 'admin' && member.role !== 'editor')) {
+      return NextResponse.json({ ok: false, error: 'Permission denied' }, { status: 403 });
+    }
+  }
+
   const body: { name?: string; icon?: string; parentId?: string | null } = await req.json();
   const { name, icon, parentId } = body;
 
-  interface FolderUpdate {
-    name?: string;
-    icon?: string;
-    parentId?: string | null;
-    path?: string[];
-  }
-  const update: FolderUpdate = {};
+  const update: Record<string, unknown> = {};
   if (name !== undefined) update.name = name;
   if (icon !== undefined) update.icon = icon;
   
@@ -26,7 +32,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
     
     // Check if new parent is a descendant to avoid cycles
     if (parentId) {
-      const parent = await FolderModel.findOne({ _id: parentId, userId: session.userId }).lean();
+      const parent = await FolderModel.findOne({ _id: parentId, userId: activeVaultOwner }).lean();
       if (parent?.path.includes(id)) {
         return NextResponse.json({ ok: false, error: 'Cannot move folder into its own descendant' }, { status: 400 });
       }
@@ -39,7 +45,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   }
 
   const folder = await FolderModel.findOneAndUpdate(
-    { _id: id, userId: session.userId }, 
+    { _id: id, userId: activeVaultOwner }, 
     update, 
     { new: true }
   ).lean();
@@ -48,7 +54,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
 
   // If path changed, update all descendants recursively
   if (parentId !== undefined) {
-    const descendants = await FolderModel.find({ path: id, userId: session.userId }).lean();
+    const descendants = await FolderModel.find({ path: id, userId: activeVaultOwner }).lean();
     for (const d of descendants) {
       const idx = d.path.indexOf(id);
       const newPath = [...(folder.path as string[]), id, ...d.path.slice(idx + 1)];
@@ -65,13 +71,24 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   const { id } = await props.params;
   await connectDB();
 
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwner = user?.joinedVaultId || session.userId;
+  const isOwner = !user?.joinedVaultId;
+
+  if (!isOwner) {
+    const member = await FamilyMemberModel.findOne({ userId: activeVaultOwner, memberUserId: session.userId }).lean();
+    if (!member || member.role !== 'admin') {
+      return NextResponse.json({ ok: false, error: 'Only admins can delete folders' }, { status: 403 });
+    }
+  }
+
   // Find all descendant folders to delete
-  const descendants = await FolderModel.find({ path: id, userId: session.userId }).lean();
+  const descendants = await FolderModel.find({ path: id, userId: activeVaultOwner }).lean();
   const folderIds = [id, ...descendants.map(d => d._id!.toString())];
 
   // 1. Gather all items to delete to clean up Cloudinary assets
   const { ItemModel } = await import('@/lib/models');
-  const itemsToDelete = await ItemModel.find({ folderId: { $in: folderIds }, userId: session.userId }).lean();
+  const itemsToDelete = await ItemModel.find({ folderId: { $in: folderIds }, userId: activeVaultOwner }).lean();
   
   // 2. Perform Cloudinary clean-up for each item
   const { deleteCloudinaryAsset } = await import('@/lib/cloudinary');
@@ -91,10 +108,10 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   }
 
   // 3. Delete all items from database
-  await ItemModel.deleteMany({ folderId: { $in: folderIds }, userId: session.userId });
+  await ItemModel.deleteMany({ folderId: { $in: folderIds }, userId: activeVaultOwner });
 
   // 4. Delete all these folders
-  await FolderModel.deleteMany({ _id: { $in: folderIds }, userId: session.userId });
+  await FolderModel.deleteMany({ _id: { $in: folderIds }, userId: activeVaultOwner });
 
   return NextResponse.json({ ok: true });
 }

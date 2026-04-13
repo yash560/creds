@@ -11,7 +11,7 @@ import {
   memo,
 } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Camera, X, Crop, Check, Image, AlertTriangle } from "lucide-react";
+import { Camera, X, Crop, Check, Image, AlertTriangle, Lock } from "lucide-react";
 import type { VaultItem, ItemType, Attachment } from "@/lib/types";
 import Modal from "./Modal";
 import ScanUploader from "./sections/ScanUploader";
@@ -72,6 +72,9 @@ export default function AddItemModal({
     existing?.fields ?? {},
   );
   const [memberId, setMemberId] = useState(existing?.memberId ?? "");
+  const [restrictedTo, setRestrictedTo] = useState<string[]>(
+    existing?.accessControl?.restrictedTo ?? [],
+  );
 
   // Attachments state
   const [attachments, setAttachments] = useState<Attachment[]>(
@@ -169,6 +172,7 @@ export default function AddItemModal({
         memberId: memberId || null,
         fields,
         attachments,
+        accessControl: { restrictedTo },
       };
 
       if (dedupeKey) {
@@ -182,7 +186,7 @@ export default function AddItemModal({
     } finally {
       setLoading(false);
     }
-  }, [validate, type, title, attachments, fields, tags, folderId, memberId, onSave, onClose]);
+  }, [validate, type, title, attachments, fields, tags, folderId, memberId, restrictedTo, onSave, onClose]);
 
   const addAttachment = useCallback(
     (data: string, mime: string, name: string) => {
@@ -204,21 +208,6 @@ export default function AddItemModal({
     [attachments],
   );
 
-  const handleCardFileChange = useCallback(
-    (side: CardSide) => async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      e.target.value = "";
-      const reader = new FileReader();
-      reader.onload = () => {
-        const data = reader.result as string;
-        upsertCardAttachment(side, data, file.type, file.name);
-      };
-      reader.readAsDataURL(file);
-    },
-    [],
-  );
-
   const upsertCardAttachment = useCallback(
     (side: CardSide, data: string, mimeType: string, fileName: string) => {
       const newAtt: Attachment = {
@@ -233,17 +222,29 @@ export default function AddItemModal({
       setAttachments((prev) => {
         const filtered = prev.filter((att) => att.side !== side);
         const next = [...filtered, newAtt];
-        pendingCropRef.current = { index: filtered.length, data };
+        // We set crop target to the last item added
+        setTimeout(() => {
+          setCropTarget({ index: next.length - 1, data });
+        }, 0);
         return next;
       });
-      setTimeout(() => {
-        if (pendingCropRef.current) {
-          setCropTarget(pendingCropRef.current);
-          pendingCropRef.current = null;
-        }
-      }, 0);
     },
     [],
+  );
+
+  const handleCardFileChange = useCallback(
+    (side: CardSide) => async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      e.target.value = "";
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = reader.result as string;
+        upsertCardAttachment(side, data, file.type, file.name);
+      };
+      reader.readAsDataURL(file);
+    },
+    [upsertCardAttachment],
   );
 
   const openCardCrop = useCallback(
@@ -285,6 +286,7 @@ export default function AddItemModal({
     setFolderId(existing?.folderId ?? "");
     setMemberId(existing?.memberId ?? "");
     setFields(existing?.fields ? { ...existing.fields } : {});
+    setRestrictedTo(existing?.accessControl?.restrictedTo ?? []);
     setAttachments(
       existing?.attachments
         ? existing.attachments.map((att) => ({ ...att }))
@@ -527,6 +529,52 @@ export default function AddItemModal({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Access Control */}
+        {members.length > 0 && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Lock size={13} /> Restricted Access
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {members.map((m) => {
+                const isSelected = restrictedTo.includes(m._id);
+                return (
+                  <button
+                    key={m._id}
+                    type="button"
+                    onClick={() => {
+                      setRestrictedTo(prev => 
+                        prev.includes(m._id) 
+                          ? prev.filter(id => id !== m._id) 
+                          : [...prev, m._id]
+                      );
+                    }}
+                    className={`btn ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ 
+                      padding: '4px 10px', 
+                      fontSize: 11, 
+                      borderRadius: 20,
+                      border: isSelected ? 'none' : '1px solid var(--border)'
+                    }}
+                  >
+                    {m.emoji} {m.name}
+                  </button>
+                );
+              })}
+            </div>
+            {restrictedTo.length > 0 && (
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                Only the selected members (and admins) can see this item.
+              </p>
+            )}
+            {restrictedTo.length === 0 && (
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                Everyone in the vault can see this item.
+              </p>
+            )}
           </div>
         )}
       </div>

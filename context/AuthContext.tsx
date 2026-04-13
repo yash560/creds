@@ -45,6 +45,8 @@ export interface AuthContextValue {
     email: string,
     password: string,
     vaultName: string,
+    name?: string,
+    invitationToken?: string,
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   verifyPin: (pin: string) => Promise<void>;
@@ -150,12 +152,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Register ──────────────────────────────────────────────────────────────────
   const register = useCallback(
-    async (email: string, password: string, vaultName: string) => {
+    async (email: string, password: string, vaultName: string, name?: string, invitationToken?: string) => {
       setError("");
       const res = await fetch("/api/auth/setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, vaultName }),
+        body: JSON.stringify({ email, password, vaultName, name, invitationToken }),
       });
       const data = await res.json();
       if (!data.ok) {

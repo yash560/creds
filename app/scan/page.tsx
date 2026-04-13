@@ -7,6 +7,7 @@ import ItemCard from '@/components/ItemCard';
 import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import AccessControlModal from '@/components/AccessControlModal';
 import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
@@ -14,12 +15,13 @@ export default function ScanPage() {
   const { 
     items, addItem, updateItem, deleteItem, 
     folders, members, searchQuery, memberFilter,
-    selectAll
+    selectAll, updateItemAccess
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [accessItem, setAccessItem] = useState<VaultItem | null>(null);
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'scan');
@@ -63,7 +65,17 @@ export default function ScanPage() {
       ) : (
         <div className="item-grid">
           {filtered.map(item => (
-            <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+            <ItemCard 
+              key={item._id} 
+              item={item} 
+              members={members} 
+              folders={folders}
+              onClick={setDetailItem} 
+              onEdit={setEditItem} 
+              onDelete={setDeleteId} 
+              onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+              onManageAccess={setAccessItem}
+            />
           ))}
         </div>
       )}
@@ -73,6 +85,19 @@ export default function ScanPage() {
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} />
+      {accessItem && (
+        <AccessControlModal
+          open={!!accessItem}
+          onClose={() => setAccessItem(null)}
+          title={`Manage Access: ${accessItem.title}`}
+          members={members}
+          initialRestrictedTo={accessItem.accessControl?.restrictedTo || []}
+          onSave={async (restrictedTo) => {
+            await updateItemAccess(accessItem._id, restrictedTo);
+          }}
+          description="Grant specific members access to this scan."
+        />
+      )}
     </>
   );
 }

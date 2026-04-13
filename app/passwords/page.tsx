@@ -11,6 +11,7 @@ import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
+import AccessControlModal from '@/components/AccessControlModal';
 import { GridSkeleton } from '@/components/SkeletonLoader';
 import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
@@ -30,7 +31,7 @@ export default function PasswordsPage() {
   const { 
     items, addItem, addItemsBulk, updateItem, deleteItem, 
     folders, members, searchQuery, memberFilter, isLoading,
-    selectAll
+    selectAll, updateItemAccess
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -39,6 +40,7 @@ export default function PasswordsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [folderId, setFolderId] = useState<string | null | undefined>(undefined);
   const [folderPanelOpen, setFolderPanelOpen] = useState(false);
+  const [accessItem, setAccessItem] = useState<VaultItem | null>(null);
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'password');
@@ -161,10 +163,12 @@ export default function PasswordsPage() {
                   key={item._id} 
                   item={item} 
                   members={members}
+                  folders={folders}
                   onClick={setDetailItem} 
                   onEdit={setEditItem} 
                   onDelete={setDeleteId} 
                   onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+                  onManageAccess={setAccessItem}
                 />
               ))}
             </div>
@@ -193,6 +197,19 @@ export default function PasswordsPage() {
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this password permanently?" />
+      {accessItem && (
+        <AccessControlModal
+          open={!!accessItem}
+          onClose={() => setAccessItem(null)}
+          title={`Manage Access: ${accessItem.title}`}
+          members={members}
+          initialRestrictedTo={accessItem.accessControl?.restrictedTo || []}
+          onSave={async (restrictedTo) => {
+            await updateItemAccess(accessItem._id, restrictedTo);
+          }}
+          description="Grant specific members access to this login."
+        />
+      )}
     </div>
   );
 }

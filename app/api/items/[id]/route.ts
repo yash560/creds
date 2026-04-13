@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { ItemModel } from '@/lib/models';
+import { ItemModel, FamilyMemberModel, UserModel } from '@/lib/models';
 import { encryptFields, decryptFields } from '@/lib/crypto';
 import { getSession } from '@/lib/session';
 import { deleteCloudinaryAsset, resolveResourceType } from '@/lib/cloudinary';
@@ -10,8 +10,18 @@ async function getAuthedItem(id: string) {
   const session = await getSession();
   if (!session) return { session: null, item: null };
   await connectDB();
-  const item = await ItemModel.findOne({ _id: id, userId: session.userId }).lean();
-  return { session, item };
+  
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwner = user?.joinedVaultId || session.userId;
+  const isOwner = !user?.joinedVaultId;
+  
+  if (!isOwner) {
+    const member = await FamilyMemberModel.findOne({ userId: activeVaultOwner, memberUserId: session.userId }).lean();
+    if (!member) return { session, item: null };
+  }
+
+  const item = await ItemModel.findOne({ _id: id, userId: activeVaultOwner }).lean();
+  return { session, item, activeVaultOwner };
 }
 
 type CloudAttachment = {
@@ -56,7 +66,18 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await connectDB();
 
-  const existing = await ItemModel.findOne({ _id: id, userId: session.userId }).lean();
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwner = user?.joinedVaultId || session.userId;
+  const isOwner = !user?.joinedVaultId;
+
+  if (!isOwner) {
+    const member = await FamilyMemberModel.findOne({ userId: activeVaultOwner, memberUserId: session.userId }).lean();
+    if (!member || (member.role !== 'admin' && member.role !== 'editor')) {
+      return NextResponse.json({ ok: false, error: 'Permission denied' }, { status: 403 });
+    }
+  }
+
+  const existing = await ItemModel.findOne({ _id: id, userId: activeVaultOwner }).lean();
   if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
   const body = await req.json();
@@ -74,7 +95,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (body.isFavourite !== undefined) update.isFavourite = body.isFavourite;
   if (body.memberId !== undefined) update.memberId = body.memberId;
 
-  const updated = await ItemModel.findOneAndUpdate({ _id: id, userId: session.userId }, update, { new: true }).lean();
+  const updated = await ItemModel.findOneAndUpdate({ _id: id, userId: activeVaultOwner }, update, { new: true }).lean();
   if (!updated) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
 
   try {
@@ -92,7 +113,18 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   const session = await getSession();
   if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   await connectDB();
-  const existing = await ItemModel.findOne({ _id: id, userId: session.userId }).lean();
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwner = user?.joinedVaultId || session.userId;
+  const isOwner = !user?.joinedVaultId;
+
+  if (!isOwner) {
+    const member = await FamilyMemberModel.findOne({ userId: activeVaultOwner, memberUserId: session.userId }).lean();
+    if (!member || (member.role !== 'admin' && member.role !== 'editor')) {
+      return NextResponse.json({ ok: false, error: 'Permission denied' }, { status: 403 });
+    }
+  }
+
+  const existing = await ItemModel.findOne({ _id: id, userId: activeVaultOwner }).lean();
   if (!existing) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
   try {
     await deleteRemovedAttachments(existing.attachments ?? [], []);
@@ -100,6 +132,6 @@ export async function DELETE(_: NextRequest, props: { params: Promise<{ id: stri
   } catch (error) {
     console.error('Cloudinary cleanup failed', error);
   }
-  await ItemModel.findOneAndDelete({ _id: id, userId: session.userId });
+  await ItemModel.findOneAndDelete({ _id: id, userId: activeVaultOwner });
   return NextResponse.json({ ok: true });
 }

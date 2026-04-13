@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { ItemModel } from '@/lib/models';
+import { ItemModel, UserModel, FamilyMemberModel, FolderModel } from '@/lib/models';
 import { encryptFields, decryptFields } from '@/lib/crypto';
 import { getSession } from '@/lib/session';
 import { normalizeAttachments } from '@/lib/attachments';
@@ -28,9 +28,67 @@ export async function GET(req: NextRequest) {
   const folderId = searchParams.get('folderId');
   const q = searchParams.get('q');
 
-  const filter: Record<string, unknown> = { userId: session.userId };
+  // Determine active vault owner
+  const user = await UserModel.findById(session.userId).lean();
+  const activeVaultOwnerId = user?.joinedVaultId || session.userId;
+  
+  // 1. Get current user's member info in this vault
+  let member: any = null;
+  if (activeVaultOwnerId !== session.userId) {
+    member = await FamilyMemberModel.findOne({ 
+      userId: activeVaultOwnerId, 
+      memberUserId: session.userId 
+    }).lean();
+  }
+
+  const filter: any = { userId: activeVaultOwnerId };
   if (type) filter.type = type;
   if (folderId !== null) filter.folderId = folderId === 'null' ? null : folderId;
+
+  // 2. Access Control Logic for non-admins
+  if (member && member.role !== 'admin') {
+    const memberId = member._id.toString();
+
+    // a. Get all folders this member has access to (direct or inherited)
+    // We already have this logic in folders/route.ts, but we need it here to filter items.
+    
+    // Find explicitly shared folders
+    const explicitlySharedFolders = await FolderModel.find({
+      userId: activeVaultOwnerId,
+      'accessControl.restrictedTo': memberId
+    }).lean();
+    const sharedFolderIds = explicitlySharedFolders.map(f => f._id.toString());
+
+    // Find all descendants of shared folders
+    const allVisibleFolderIds = [...sharedFolderIds];
+    if (sharedFolderIds.length > 0) {
+      const descendants = await FolderModel.find({
+        userId: activeVaultOwnerId,
+        path: { $in: sharedFolderIds },
+        $or: [
+          { 'accessControl.restrictedTo': { $size: 0 } },
+          { 'accessControl.restrictedTo': { $exists: false } },
+          { 'accessControl.restrictedTo': memberId }
+        ]
+      }).lean();
+      allVisibleFolderIds.push(...descendants.map(d => d._id.toString()));
+    }
+
+    // b. Items are visible if:
+    //    - Explicitly shared with member Id
+    //    - OR inside a visible folder AND NOT restricted to someone else
+    filter.$or = [
+      { 'accessControl.restrictedTo': memberId },
+      { 
+        folderId: { $in: allVisibleFolderIds },
+        $or: [
+          { 'accessControl.restrictedTo': { $size: 0 } },
+          { 'accessControl.restrictedTo': { $exists: false } },
+          { 'accessControl.restrictedTo': memberId }
+        ]
+      }
+    ];
+  }
 
   const items = await ItemModel.find(filter).sort({ updatedAt: -1 }).lean();
 
@@ -64,6 +122,22 @@ export async function POST(req: NextRequest) {
 
   try {
     await connectDB();
+    
+    // Determine active vault owner and permissions
+    const user = await UserModel.findById(session.userId).lean();
+    const activeVaultOwnerId = user?.joinedVaultId || session.userId;
+    
+    if (activeVaultOwnerId !== session.userId) {
+      const member = await FamilyMemberModel.findOne({ 
+        userId: activeVaultOwnerId, 
+        memberUserId: session.userId 
+      }).lean();
+      
+      if (!member || (member.role !== 'admin' && member.role !== 'editor')) {
+        return NextResponse.json({ ok: false, error: 'You do not have permission to add items to this vault' }, { status: 403 });
+      }
+    }
+
     const body = await req.json();
     const { 
       type, title, tags, folderId, fields, 
@@ -96,7 +170,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Duplicate check - return existing item if found
-    const existing = await ItemModel.findOne({ userId: session.userId, dedupeKey }).lean();
+    const existing = await ItemModel.findOne({ userId: activeVaultOwnerId, dedupeKey }).lean();
     if (existing) {
       const raw = existing.fields instanceof Map
         ? Object.fromEntries(existing.fields)
@@ -110,7 +184,7 @@ export async function POST(req: NextRequest) {
     }
 
     const item = await ItemModel.create({
-      userId: session.userId,
+      userId: activeVaultOwnerId,
       type, title,
       tags: tags || [],
       folderId: folderId || null,

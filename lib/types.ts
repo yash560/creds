@@ -40,6 +40,9 @@ export interface VaultItem {
   dedupeKey?: string;
   isFavourite?: boolean;
   memberId?: string | null;
+  accessControl?: {
+    restrictedTo: string[];
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +100,9 @@ export interface Folder {
   parentId: string | null;
   path: string[]; // array of ancestor _ids for breadcrumb
   icon?: string;
+  accessControl?: {
+    restrictedTo: string[];
+  };
   createdAt: string;
 }
 
@@ -109,6 +115,7 @@ export interface FamilyMember {
   role: Role;
   /** tag IDs or folder IDs this member can access (empty = all for admin) */
   permissions: string[];
+  memberUserId?: string;
   createdAt: string;
 }
 
@@ -142,5 +149,18 @@ export interface SearchState {
 export interface Category {
   _id: string;
   name: string;
+  createdAt: string;
+}
+
+export interface Invitation {
+  _id: string;
+  token: string;
+  vaultOwnerId: string;
+  name: string;
+  role: Role;
+  status: 'pending' | 'accepted' | 'expired';
+  ownerName?: string;
+  vaultName?: string;
+  expiresAt: string;
   createdAt: string;
 }

@@ -38,6 +38,8 @@ interface VaultContextValue {
   ) => Promise<Folder>;
   updateFolder: (id: string, payload: { name?: string; icon?: string; parentId?: string | null }) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
+  updateFolderAccess: (id: string, restrictedTo: string[]) => Promise<void>;
+  updateItemAccess: (id: string, restrictedTo: string[]) => Promise<void>;
   addMember: (payload: Partial<FamilyMember>) => Promise<FamilyMember>;
   updateMember: (id: string, payload: Partial<FamilyMember>) => Promise<void>;
   deleteMember: (id: string) => Promise<void>;
@@ -470,6 +472,34 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     },
     [cryptoKey],
   );
+  
+  const updateFolderAccess = useCallback(
+    async (id: string, restrictedTo: string[]) => {
+      const res = await fetch(`/api/folders/${id}/access`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restrictedTo }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const updateItemAccess = useCallback(
+    async (id: string, restrictedTo: string[]) => {
+      const res = await fetch(`/api/items/${id}/access`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restrictedTo }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      await refresh();
+    },
+    [refresh],
+  );
 
   const addMember = useCallback(
     async (payload: Partial<FamilyMember>): Promise<FamilyMember> => {
@@ -599,6 +629,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         addFolder,
         updateFolder,
         deleteFolder,
+        updateFolderAccess,
+        updateItemAccess,
         addMember,
         updateMember,
         deleteMember,

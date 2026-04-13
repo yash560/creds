@@ -13,7 +13,8 @@ import PasswordDetailView from "./sections/PasswordCard";
 import CreditCardView from "./sections/CreditCard";
 import DocumentCardView from "./sections/DocumentCard";
 import ShareModal from "./ShareModal";
-import { Pencil, Move, Share2, X } from "lucide-react";
+import { Pencil, Move, Share2, X, Folder } from "lucide-react";
+import Link from "next/link";
 import { useVault } from "@/context/VaultContext";
 
 interface ItemDetailModalProps {
@@ -161,6 +162,41 @@ export default function ItemDetailModal({
                 {members.find((m) => m._id === item.memberId)?.name ||
                   "Unknown"}
               </span>
+            </div>
+          </div>
+        )}
+
+        {item.folderId && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 14px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 12,
+              marginBottom: 16,
+            }}
+          >
+            <Folder size={14} style={{ color: "var(--accent-primary)" }} />
+            <div className="breadcrumb-nav" style={{ fontSize: 13, background: 'transparent', padding: 0 }}>
+              {folders.find(f => f._id === item.folderId)?.path.map(pid => {
+                const f = folders.find(folder => folder._id === pid);
+                return f ? (
+                  <span key={f._id}>
+                    <Link href={`/folders?id=${f._id}`} className="breadcrumb-item" onClick={onClose}>{f.name}</Link>
+                    <span className="breadcrumb-divider">/</span>
+                  </span>
+                ) : null;
+              })}
+              <Link 
+                href={`/folders?id=${item.folderId}`} 
+                className="breadcrumb-item active"
+                onClick={onClose}
+              >
+                {folders.find(f => f._id === item.folderId)?.name}
+              </Link>
             </div>
           </div>
         )}

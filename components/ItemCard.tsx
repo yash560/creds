@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { KeyRound, CreditCard, FileText, ScanLine, Star, Pencil, Trash2, Check } from 'lucide-react';
+import { KeyRound, CreditCard, FileText, ScanLine, Star, Pencil, Trash2, Check, Shield, Lock, Folder } from 'lucide-react';
 import type { VaultItem } from '@/lib/types';
 import CopyButton from './CopyButton';
 import Tooltip from './Tooltip';
@@ -16,6 +16,8 @@ interface ItemCardProps {
   onDelete: (id: string) => void;
   onToggleFav?: (item: VaultItem) => void;
   onClick?: (item: VaultItem) => void;
+  onManageAccess?: (item: VaultItem) => void;
+  folders?: { _id: string; name: string }[];
 }
 
 const TYPE_ICONS = {
@@ -55,7 +57,9 @@ export default function ItemCard({
   onEdit, 
   onDelete, 
   onToggleFav, 
-  onClick
+  onClick,
+  onManageAccess,
+  folders = []
 }: ItemCardProps) {
   const { isSelectionMode, selectedIds, toggleSelection, setIsSelectionMode } = useVault();
   const { Icon, cls } = TYPE_ICONS[item.type] ?? TYPE_ICONS.document;
@@ -93,6 +97,11 @@ export default function ItemCard({
     if (!item.memberId || !members.length) return null;
     return members.find(m => m._id === item.memberId)?.emoji;
   }, [item.memberId, members]);
+
+  const folder = useMemo(() => {
+    if (!item.folderId || !folders.length) return null;
+    return folders.find(f => f._id === item.folderId);
+  }, [item.folderId, folders]);
 
   const cardRows = useMemo(() => {
     const rows = [
@@ -149,6 +158,11 @@ export default function ItemCard({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="item-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {item.title}
+                {item.accessControl?.restrictedTo && item.accessControl.restrictedTo.length > 0 && (
+                  <Tooltip label="Restricted Access">
+                    <Lock size={12} style={{ color: 'var(--accent-amber)', opacity: 0.8 }} />
+                  </Tooltip>
+                )}
                 {memberEmoji && <span className="member-indicator" title="Assigned member">{memberEmoji}</span>}
               </div>
               {subtitle && <div className="item-subtitle">{subtitle}</div>}
@@ -169,6 +183,20 @@ export default function ItemCard({
                       style={{ color: item.isFavourite ? 'var(--accent-amber)' : undefined }}
                       fill={item.isFavourite ? 'var(--accent-amber)' : 'none'}
                     />
+                  </button>
+                </Tooltip>
+              )}
+              {onManageAccess && (
+                <Tooltip label="Manage Access">
+                  <button
+                    className="action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onManageAccess(item);
+                    }}
+                    aria-label="Manage access"
+                  >
+                    <Shield size={13} />
                   </button>
                 </Tooltip>
               )}
@@ -240,9 +268,28 @@ export default function ItemCard({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="item-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {item.title}
+                {item.accessControl?.restrictedTo && item.accessControl.restrictedTo.length > 0 && (
+                  <Tooltip label="Restricted Access">
+                    <Lock size={12} style={{ color: 'var(--accent-amber)', opacity: 0.8 }} />
+                  </Tooltip>
+                )}
                 {memberEmoji && <span className="member-indicator" title="Assigned member">{memberEmoji}</span>}
               </div>
               {subtitle && <div className="item-subtitle">{subtitle}</div>}
+              {folder && (
+                <div 
+                  className="item-folder-tag" 
+                  title="View folder" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Navigate to folders page with this folder selected
+                    window.location.href = `/folders?id=${folder._id}`;
+                  }}
+                >
+                  <Folder size={10} />
+                  <span>{folder.name}</span>
+                </div>
+              )}
             </div>
             <div className="item-card-actions">
               {copyVal && <CopyButton value={copyVal} label="Copy main value" />}
@@ -261,6 +308,20 @@ export default function ItemCard({
                       style={{ color: item.isFavourite ? 'var(--accent-amber)' : undefined }}
                       fill={item.isFavourite ? 'var(--accent-amber)' : 'none'}
                     />
+                  </button>
+                </Tooltip>
+              )}
+              {onManageAccess && (
+                <Tooltip label="Manage Access">
+                  <button
+                    className="action-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onManageAccess(item);
+                    }}
+                    aria-label="Manage access"
+                  >
+                    <Shield size={13} />
                   </button>
                 </Tooltip>
               )}

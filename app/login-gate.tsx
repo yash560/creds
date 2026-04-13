@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Shield,
   Eye,
@@ -360,6 +360,8 @@ export default function LoginGate() {
   } = useAuth();
 
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
 
   useEffect(() => {
     if (pathname === "/signup" && step === "signin") {
@@ -369,7 +371,27 @@ export default function LoginGate() {
     }
   }, [pathname, step, hasUsers, goToRegister, goToSignIn]);
 
+  const [invitationInfo, setInvitationInfo] = useState<{ ownerName: string; vaultName: string } | null>(null);
+
+  useEffect(() => {
+    if (invitationToken) {
+      fetch(`/api/invitations/${invitationToken}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok) {
+            setRegName(data.data.name);
+            setInvitationInfo({
+              ownerName: data.data.ownerName,
+              vaultName: data.data.vaultName
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [invitationToken]);
+
   // Registration state
+  const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
@@ -431,7 +453,7 @@ export default function LoginGate() {
       if (Object.keys(errs).length > 0) return;
       setRegLoading(true);
       try {
-        await register(regEmail, regPassword, regVault);
+        await register(regEmail, regPassword, regVault, regName, invitationInfo ? (invitationToken || undefined) : undefined);
       } finally {
         setRegLoading(false);
       }
@@ -444,15 +466,42 @@ export default function LoginGate() {
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>
             Create your account
           </h1>
-          <p
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: 14,
-              marginBottom: 24,
-            }}
-          >
-            Get started with your private vault
-          </p>
+          {invitationInfo ? (
+            <div className="glass-card" style={{ padding: 14, marginBottom: 20, background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                  <Shield size={16} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>Joining {invitationInfo.ownerName}&apos;s Vault</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{invitationInfo.vaultName}</div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                style={{ fontSize: 11, padding: '4px 8px', height: 'auto', color: 'var(--accent-rose)' }}
+                onClick={() => {
+                  setInvitationInfo(null);
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete('invitation');
+                  window.history.replaceState(null, '', `${pathname}${params.toString() ? '?' + params.toString() : ''}`);
+                }}
+              >
+                Opt out & create my own vault
+              </button>
+            </div>
+          ) : (
+            <p
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: 14,
+                marginBottom: 24,
+              }}
+            >
+              Get started with your private vault
+            </p>
+          )}
 
           {error && (
             <div className="alert-error" style={{ marginBottom: 16 }}>
@@ -465,6 +514,15 @@ export default function LoginGate() {
             style={{ display: "flex", flexDirection: "column", gap: 14 }}
           >
             <InputField
+              id="reg-name"
+              label="Full Name"
+              value={regName}
+              onChange={setRegName}
+              placeholder="e.g. Yash Jain"
+              icon={User}
+              autoFocus
+            />
+            <InputField
               id="reg-email"
               label="Email address"
               type="email"
@@ -475,7 +533,6 @@ export default function LoginGate() {
               }}
               placeholder="you@example.com"
               icon={Mail}
-              autoFocus
               error={regErrors.email}
             />
             <InputField
@@ -504,14 +561,16 @@ export default function LoginGate() {
               icon={Lock}
               error={regErrors.confirm}
             />
-            <InputField
-              id="reg-vault"
-              label="Vault name (optional)"
-              value={regVault}
-              onChange={setRegVault}
-              placeholder="e.g. Family Vault"
-              icon={User}
-            />
+            {!invitationInfo && (
+              <InputField
+                id="reg-vault"
+                label="Vault name (optional)"
+                value={regVault}
+                onChange={setRegVault}
+                placeholder="e.g. Family Vault"
+                icon={User}
+              />
+            )}
 
             <button
               type="submit"
@@ -537,7 +596,7 @@ export default function LoginGate() {
                 />
               ) : (
                 <>
-                  Create Vault <ArrowRight size={15} />
+                   {invitationInfo ? 'Join Shared Vault' : 'Create Vault'} <ArrowRight size={15} />
                 </>
               )}
             </button>
@@ -581,7 +640,7 @@ export default function LoginGate() {
               >
                 Already have an account?{" "}
                 <Link
-                  href="/signin"
+                  href={`/signin${invitationToken ? `?invitation=${invitationToken}` : ''}`}
                   className="btn btn-ghost"
                   style={{
                     padding: "2px 6px",
@@ -628,6 +687,20 @@ export default function LoginGate() {
           >
             Sign in to your vault
           </p>
+
+          {invitationInfo && (
+            <div className="glass-card" style={{ padding: 12, marginBottom: 20, background: 'rgba(99, 102, 241, 0.05)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                  <Shield size={14} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>Joining {invitationInfo.ownerName}&apos;s Vault</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>You will join this vault after signing in</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="alert-error" style={{ marginBottom: 16 }}>
@@ -732,7 +805,7 @@ export default function LoginGate() {
             >
               New here?{" "}
               <Link
-                href="/signup"
+                href={`/signup${invitationToken ? `?invitation=${invitationToken}` : ''}`}
                 className="btn btn-ghost"
                 style={{ padding: "2px 6px", fontSize: 13, display: "inline" }}
                 onClick={clearError}

@@ -25,6 +25,8 @@ export interface SessionPayload {
   vaultName: string;
   /** Encryption key for this session (Base64) */
   sessionKey: string;
+  name?: string;
+  joinedVaultId?: string | null;
 }
 
 /** Sign and set the session cookie on a NextResponse */

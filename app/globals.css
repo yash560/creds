@@ -3336,3 +3336,59 @@ section {
     text-align: center;
   }
 }
+
+.item-folder-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-top: 6px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.2s ease;
+}
+
+.item-folder-tag:hover {
+  background: rgba(99, 102, 241, 0.15);
+  transform: translateY(-1px);
+}
+
+.item-folder-tag svg {
+  opacity: 0.8;
+}
+
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  padding: 8px 0;
+  white-space: nowrap;
+}
+
+.breadcrumb-item {
+  transition: color 0.2s;
+}
+
+.breadcrumb-item:hover {
+  color: var(--accent-primary);
+}
+
+.breadcrumb-item.active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.breadcrumb-divider {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+

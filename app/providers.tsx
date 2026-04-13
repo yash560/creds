@@ -24,6 +24,7 @@ function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   const isSharePage = pathname?.startsWith("/share");
+  const isJoinPage = pathname?.startsWith("/join");
 
   if (!mounted) {
     return null;
@@ -44,8 +45,8 @@ function AppShell({ children }: { children: ReactNode }) {
       redirect("/signin");
     }
 
-    // Landing Page and Share Pages are public
-    if (isLandingPage || isSharePage) {
+    // Landing Page, Share Pages, and Join Pages are public
+    if (isLandingPage || isSharePage || isJoinPage) {
       return <main className="animate-fadeIn">{children}</main>;
     }
     

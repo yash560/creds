@@ -8,6 +8,7 @@ import AddItemModal from '@/components/AddItemModal';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import ItemCard from '@/components/ItemCard';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import AccessControlModal from '@/components/AccessControlModal';
 import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
@@ -19,11 +20,12 @@ const STATS = [
 ];
 
 export default function DashboardPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, memberFilter } = useVault();
+  const { items, addItem, updateItem, deleteItem, updateItemAccess, folders, members, searchQuery, memberFilter } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [accessItem, setAccessItem] = useState<VaultItem | null>(null);
 
   const filteredItems = useMemo(() => {
     if (!memberFilter) return items;
@@ -90,7 +92,17 @@ export default function DashboardPage() {
           ) : (
             <div className="item-grid">
               {searchResults.map(item => (
-                <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                 <ItemCard 
+                    key={item._id} 
+                    item={item} 
+                    members={members} 
+                    folders={folders}
+                    onClick={setDetailItem} 
+                    onEdit={setEditItem} 
+                    onDelete={setDeleteId} 
+                    onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+                    onManageAccess={setAccessItem}
+                  />
               ))}
             </div>
           )}
@@ -106,7 +118,17 @@ export default function DashboardPage() {
               </div>
               <div className="item-grid">
                 {favourites.slice(0,4).map(item => (
-                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                  <ItemCard 
+                    key={item._id} 
+                    item={item} 
+                    members={members} 
+                    folders={folders}
+                    onClick={setDetailItem} 
+                    onEdit={setEditItem} 
+                    onDelete={setDeleteId} 
+                    onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+                    onManageAccess={setAccessItem}
+                  />
                 ))}
               </div>
             </div>
@@ -128,7 +150,17 @@ export default function DashboardPage() {
             ) : (
               <div className="item-grid">
                 {recent.map(item => (
-                  <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteId} onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} />
+                  <ItemCard 
+                    key={item._id} 
+                    item={item} 
+                    members={members} 
+                    folders={folders}
+                    onClick={setDetailItem} 
+                    onEdit={setEditItem} 
+                    onDelete={setDeleteId} 
+                    onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })} 
+                    onManageAccess={setAccessItem}
+                  />
                 ))}
               </div>
             )}
@@ -144,6 +176,19 @@ export default function DashboardPage() {
       <AddItemModal open={!!editItem} onClose={() => setEditItem(null)} existing={editItem} folders={folders} members={members} onSave={async (p) => { await updateItem(editItem!._id, p); }} />
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this item permanently?" />
+      {accessItem && (
+        <AccessControlModal
+          open={!!accessItem}
+          onClose={() => setAccessItem(null)}
+          title={`Manage Access: ${accessItem.title}`}
+          members={members}
+          initialRestrictedTo={accessItem.accessControl?.restrictedTo || []}
+          onSave={async (restrictedTo) => {
+            await updateItemAccess(accessItem._id, restrictedTo);
+          }}
+          description="Grant specific members access to this item."
+        />
+      )}
     </>
   );
 }

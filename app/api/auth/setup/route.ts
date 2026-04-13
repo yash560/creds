@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { UserModel } from '@/lib/models';
+import { UserModel, InvitationModel, FamilyMemberModel } from '@/lib/models';
 import { hashSecret } from '@/lib/crypto-secret';
 import { createSessionCookie, COOKIE_NAME, COOKIE_OPTS } from '@/lib/session';
 
 // POST /api/auth/register
 export async function POST(req: NextRequest) {
   await connectDB();
-  const { email, password, vaultName } = await req.json();
+  const { email, password, vaultName, name, invitationToken } = await req.json();
 
   if (!email || !password) {
     return NextResponse.json({ ok: false, error: 'Email and password are required' }, { status: 400 });
@@ -25,11 +25,39 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await hashSecret(password);
+  
+  let joinedVaultId = undefined;
+  if (invitationToken) {
+    const inv = await InvitationModel.findOne({ token: invitationToken, status: 'pending' });
+    if (inv && new Date() <= inv.expiresAt) {
+      joinedVaultId = inv.vaultOwnerId;
+    }
+  }
+
   const user = await UserModel.create({
     email: email.toLowerCase().trim(),
+    name: name?.trim(),
     passwordHash,
     vaultName: vaultName?.trim() || 'My Vault',
+    joinedVaultId
   });
+
+  if (joinedVaultId && invitationToken) {
+    const inv = await InvitationModel.findOne({ token: invitationToken });
+    if (inv) {
+      // Add as family member
+      await FamilyMemberModel.create({
+        userId: joinedVaultId,
+        name: name || user.name || user.email,
+        memberUserId: user._id.toString(),
+        role: inv.role,
+        permissions: []
+      });
+      // Accept invitation
+      inv.status = 'accepted';
+      await inv.save();
+    }
+  }
 
   const sessionKey = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64');
 
@@ -43,7 +71,7 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({
     ok: true,
     sessionKey,
-    user: { email: user.email, vaultName: user.vaultName, hasPinSet: false },
+    user: { name: user.name, email: user.email, vaultName: user.vaultName, hasPinSet: false },
   }, { status: 201 });
   response.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);
   return response;

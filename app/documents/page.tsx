@@ -11,6 +11,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import FolderTree from '@/components/FolderTree';
 import ZipImportModal from '@/components/ZipImportModal';
 import CategoryManagerModal from '@/components/CategoryManagerModal';
+import AccessControlModal from '@/components/AccessControlModal';
 import { GridSkeleton } from '@/components/SkeletonLoader';
 import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
@@ -28,6 +29,7 @@ export default function DocumentsPage() {
     memberFilter,
     isLoading,
     selectAll,
+    updateItemAccess
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [zipOpen, setZipOpen] = useState(false);
@@ -35,9 +37,10 @@ export default function DocumentsPage() {
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [category, setCategory] = useState("All");
-  const [folderId, setFolderId] = useState<string | null | undefined>(undefined);
+  const [folderId, setFolderId] = useState<string | null>(null);
   const [folderPanelOpen, setFolderPanelOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [accessItem, setAccessItem] = useState<VaultItem | null>(null);
 
   // Derive subfolders of currently selected folder
   const subFolders = useMemo(() => {
@@ -228,10 +231,12 @@ export default function DocumentsPage() {
                       key={item._id}
                       item={item}
                       members={members}
+                      folders={folders}
                       onClick={setDetailItem}
                       onEdit={setEditItem}
                       onDelete={setDeleteId}
                       onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })}
+                      onManageAccess={setAccessItem}
                     />
                   ))}
                 </div>
@@ -248,6 +253,19 @@ export default function DocumentsPage() {
       <ItemDetailModal item={detailItem} onClose={() => setDetailItem(null)} onEdit={() => { setEditItem(detailItem); setDetailItem(null); }} />
       <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { deleteItem(deleteId!); setDeleteId(null); }} message="Delete this document permanently?" />
       <CategoryManagerModal open={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
+      {accessItem && (
+        <AccessControlModal
+          open={!!accessItem}
+          onClose={() => setAccessItem(null)}
+          title={`Manage Access: ${accessItem.title}`}
+          members={members}
+          initialRestrictedTo={accessItem.accessControl?.restrictedTo || []}
+          onSave={async (restrictedTo) => {
+            await updateItemAccess(accessItem._id, restrictedTo);
+          }}
+          description="Grant specific members access to this item. If no one is selected, everyone in the family can see it."
+        />
+      )}
     </div>
   );
 }

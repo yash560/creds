@@ -34,6 +34,7 @@ export async function GET() {
       email: user.email,
       phone: user.phone,
       vaultName: user.vaultName,
+      joinedVaultId: user.joinedVaultId,
       hasPinSet: !!user.pinHash,
     },
   });

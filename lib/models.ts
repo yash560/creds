@@ -12,6 +12,7 @@ export interface IUser {
   avatarUrl?: string;         // Google avatar
   pinHash: string | null;     // bcrypt of 4-digit quick PIN
   vaultName: string;
+  joinedVaultId?: string;     // If joined another user's vault, this is their user ID
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,7 @@ const UserSchema = new Schema<IUser>(
     avatarUrl: { type: String },
     pinHash: { type: String, default: null },
     vaultName: { type: String, default: 'My Vault' },
+    joinedVaultId: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -58,6 +60,9 @@ interface IItem {
   dedupeKey?: string;
   isFavourite: boolean;
   memberId: string | null;
+  accessControl?: {
+    restrictedTo: string[]; // array of member IDs
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +92,9 @@ const ItemSchema = new Schema<IItem>(
     dedupeKey: { type: String, index: true },
     isFavourite: { type: Boolean, default: false },
     memberId: { type: String, default: null, index: true },
+    accessControl: {
+      restrictedTo: [{ type: String }],
+    },
   },
   { timestamps: true }
 );
@@ -102,6 +110,9 @@ interface IFolder {
   parentId: string | null;
   path: string[];
   icon?: string;
+  accessControl?: {
+    restrictedTo: string[]; // array of member IDs
+  };
   createdAt: Date;
 }
 
@@ -111,6 +122,9 @@ const FolderSchema = new Schema<IFolder>({
   parentId: { type: String, default: null },
   path: [{ type: String }],
   icon: { type: String },
+  accessControl: {
+    restrictedTo: [{ type: String }],
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -125,6 +139,7 @@ interface IFamilyMember {
   emoji: string;
   role: string;
   permissions: string[];
+  memberUserId?: string; // If registered, link to their actual user ID
   createdAt: Date;
 }
 
@@ -134,6 +149,7 @@ const FamilyMemberSchema = new Schema<IFamilyMember>({
   emoji: { type: String, default: '👤' },
   role: { type: String, default: 'viewer' },
   permissions: [{ type: String }],
+  memberUserId: { type: String, default: null, index: true },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -185,6 +201,35 @@ const ShareLinkSchema = new Schema<IShareLink>(
 
 export const ShareLinkModel: Model<IShareLink> =
   mongoose.models.ShareLink || mongoose.model<IShareLink>('ShareLink', ShareLinkSchema);
+
+// ─── Invitation ───────────────────────────────────────────────────────────────
+
+export interface IInvitation {
+  _id: Types.ObjectId;
+  token: string;
+  vaultOwnerId: string;
+  name: string;
+  role: string;
+  status: 'pending' | 'accepted' | 'expired';
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const InvitationSchema = new Schema<IInvitation>(
+  {
+    token: { type: String, required: true, unique: true, index: true },
+    vaultOwnerId: { type: String, required: true, index: true },
+    name: { type: String, required: true },
+    role: { type: String, default: 'viewer' },
+    status: { type: String, enum: ['pending', 'accepted', 'expired'], default: 'pending' },
+    expiresAt: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+
+export const InvitationModel: Model<IInvitation> =
+  mongoose.models.Invitation || mongoose.model<IInvitation>('Invitation', InvitationSchema);
 
 // ─── Category ─────────────────────────────────────────────────────────────────
 
