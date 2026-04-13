@@ -65,7 +65,12 @@ export async function POST(req: NextRequest) {
   try {
     await connectDB();
     const body = await req.json();
-    const { type, title, tags, folderId, fields, fileData, fileName, fileMimeType, filePublicId, fileResourceType, attachments } = body;
+    const { 
+      type, title, tags, folderId, fields, 
+      fileData, fileName, fileMimeType, 
+      filePublicId, fileResourceType, attachments,
+      memberId 
+    } = body;
     let { dedupeKey } = body;
 
     const encrypted = await encryptFields(fields || {});
@@ -117,6 +122,7 @@ export async function POST(req: NextRequest) {
       fileName,
       fileMimeType,
       dedupeKey,
+      memberId: memberId || null,
     });
 
     return NextResponse.json({ ok: true, data: { ...item.toObject(), _id: item._id!.toString() } }, { status: 201 });

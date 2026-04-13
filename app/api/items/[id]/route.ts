@@ -72,6 +72,7 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
   if (body.fileResourceType !== undefined) update.fileResourceType = body.fileResourceType;
   if (body.attachments !== undefined) update.attachments = normalizeAttachments(body.attachments);
   if (body.isFavourite !== undefined) update.isFavourite = body.isFavourite;
+  if (body.memberId !== undefined) update.memberId = body.memberId;
 
   const updated = await ItemModel.findOneAndUpdate({ _id: id, userId: session.userId }, update, { new: true }).lean();
   if (!updated) return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 });
