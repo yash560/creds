@@ -39,6 +39,11 @@ function AppShell({ children }: { children: ReactNode }) {
 
   // Case 1: NOT authenticated
   if (!isAuthenticated || step !== "authenticated") {
+    // If user is at root but has a session (pin/setup-pin), redirect to signin
+    if (isLandingPage && (step === "pin" || step === "setup-pin")) {
+      redirect("/signin");
+    }
+
     // Landing Page and Share Pages are public
     if (isLandingPage || isSharePage) {
       return <main className="animate-fadeIn">{children}</main>;
