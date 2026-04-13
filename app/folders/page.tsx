@@ -11,7 +11,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import type { Folder, VaultItem } from '@/lib/types';
 
 export default function FoldersPage() {
-  const { folders, addFolder, updateFolder, deleteFolder, items, addItem, updateItem, deleteItem } = useVault();
+  const { folders, addFolder, updateFolder, deleteFolder, items, addItem, updateItem, deleteItem, memberFilter, members } = useVault();
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [addFolderOpen, setAddFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -23,8 +23,9 @@ export default function FoldersPage() {
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
+  const filteredItems = memberFilter ? items.filter(i => i.memberId === memberFilter) : items;
   const rootFolders = folders.filter(f => !f.parentId);
-  const folderItems = selectedFolderId ? items.filter(i => i.folderId === selectedFolderId) : [];
+  const folderItems = selectedFolderId ? filteredItems.filter(i => i.folderId === selectedFolderId) : [];
   const selectedFolder = folders.find(f => f._id === selectedFolderId);
   const childFolders = selectedFolderId ? folders.filter(f => f.parentId === selectedFolderId) : rootFolders;
 
@@ -68,7 +69,7 @@ export default function FoldersPage() {
                   </div>
                 </div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{f.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{items.filter(i => i.folderId === f._id).length} items</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filteredItems.filter(i => i.folderId === f._id).length} items</div>
               </div>
             ))}
           </div>
@@ -88,7 +89,7 @@ export default function FoldersPage() {
           ) : (
             <div className="item-grid">
               {folderItems.map(item => (
-                <ItemCard key={item._id} item={item} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteItemId} />
+                <ItemCard key={item._id} item={item} members={members} onClick={setDetailItem} onEdit={setEditItem} onDelete={setDeleteItemId} />
               ))}
             </div>
           )}

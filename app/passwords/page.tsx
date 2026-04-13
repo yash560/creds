@@ -27,7 +27,7 @@ function titleFromChromeRow(row: ChromePasswordRow): string {
 }
 
 export default function PasswordsPage() {
-  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery, isLoading } = useVault();
+  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery, memberFilter, isLoading } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
@@ -44,8 +44,12 @@ export default function PasswordsPage() {
     if (folderId !== undefined) {
       list = list.filter(i => i.folderId === folderId);
     }
+    // Member filter
+    if (memberFilter) {
+      list = list.filter(i => i.memberId === memberFilter);
+    }
     return filterItems(list, searchQuery, folders, members);
-  }, [items, folderId, searchQuery, folders, members]);
+  }, [items, folderId, searchQuery, memberFilter, folders, members]);
 
   const handleBulkImport = useCallback(async (rows: ChromePasswordRow[]) => {
     const payloads = rows.map(row => ({

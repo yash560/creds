@@ -12,7 +12,7 @@ import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 export default function CardsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, isLoading } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, memberFilter, isLoading } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -20,8 +20,11 @@ export default function CardsPage() {
 
   const filtered = useMemo(() => {
     let list = items.filter(i => i.type === 'card');
+    if (memberFilter) {
+      list = list.filter(i => i.memberId === memberFilter);
+    }
     return filterItems(list, searchQuery, folders, members);
-  }, [items, searchQuery, folders, members]);
+  }, [items, searchQuery, memberFilter, folders, members]);
 
   return (
     <>

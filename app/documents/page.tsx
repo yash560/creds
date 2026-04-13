@@ -26,6 +26,7 @@ export default function DocumentsPage() {
     categories,
     mergeItems,
     searchQuery,
+    memberFilter,
     isLoading,
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
@@ -68,8 +69,10 @@ export default function DocumentsPage() {
       list = list.filter((i) => i.folderId === folderId);
     if (category !== "All")
       list = list.filter((i) => i.fields.category === category);
+    if (memberFilter)
+      list = list.filter((i) => i.memberId === memberFilter);
     return filterItems(list, searchQuery, folders, members);
-  }, [items, folderId, category, searchQuery, folders, members]);
+  }, [items, folderId, category, searchQuery, memberFilter, folders, members]);
 
   const handleFolderSelect = (next: string | null) => {
     setFolderId(next);

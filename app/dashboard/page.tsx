@@ -19,18 +19,23 @@ const STATS = [
 ];
 
 export default function DashboardPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery } = useVault();
+  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, memberFilter } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const recent = useMemo(() => [...items].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 8), [items]);
-  const favourites = useMemo(() => items.filter(i => i.isFavourite), [items]);
+  const filteredItems = useMemo(() => {
+    if (!memberFilter) return items;
+    return items.filter(i => i.memberId === memberFilter);
+  }, [items, memberFilter]);
+
+  const recent = useMemo(() => [...filteredItems].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 8), [filteredItems]);
+  const favourites = useMemo(() => filteredItems.filter(i => i.isFavourite), [filteredItems]);
 
   const searchResults = useMemo(() => {
-    return filterItems(items, searchQuery, folders, members);
-  }, [items, searchQuery, folders, members]);
+    return filterItems(filteredItems, searchQuery, folders, members);
+  }, [filteredItems, searchQuery, folders, members]);
 
   return (
     <>
@@ -55,7 +60,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="stat-label">{label}</div>
               </div>
-              <div className="stat-value" style={{ color }}>{items.filter(i => i.type === type).length}</div>
+              <div className="stat-value" style={{ color }}>{filteredItems.filter(i => i.type === type).length}</div>
             </div>
           </Link>
         ))}

@@ -21,6 +21,8 @@ interface VaultContextValue {
   isLoading: boolean;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  memberFilter: string | null;
+  setMemberFilter: (id: string | null) => void;
   refresh: () => Promise<void>;
   addItem: (payload: Partial<VaultItem>) => Promise<VaultItem>;
   addItemsBulk: (payloads: Partial<VaultItem>[]) => Promise<void>;
@@ -54,6 +56,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const { playSound } = useSound();
   const [searchQuery, setSearchQuery] = useState("");
+  const [memberFilter, setMemberFilter] = useState<string | null>(null);
 
   const parseApiResponse = useCallback(async (res: Response) => {
     const txt = await res.text();
@@ -511,6 +514,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         isLoading,
         searchQuery,
         setSearchQuery,
+        memberFilter,
+        setMemberFilter,
         refresh,
         addItem,
         addItemsBulk,
