@@ -21,10 +21,13 @@ export async function GET(req: NextRequest) {
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
     ].join(' '),
-    state: invitationToken || undefined,
-  };
+    state: invitationToken,
+  } as const;
 
-  const qs = new URLSearchParams(options);
+  const filteredEntries = Object.entries(options).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string'
+  );
+  const qs = new URLSearchParams(Object.fromEntries(filteredEntries));
   const url = `${rootUrl}?${qs.toString()}`;
 
   return NextResponse.json({ ok: true, url });
