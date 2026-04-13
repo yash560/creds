@@ -67,7 +67,6 @@ export async function GET() {
             userId: activeVaultOwner,
             path: { $in: sharedFolderIds },
             $or: [
-              { 'accessControl.restrictedTo': { $size: 0 } },
               { 'accessControl.restrictedTo': { $exists: false } },
               { 'accessControl.restrictedTo': myMemberId }
             ]

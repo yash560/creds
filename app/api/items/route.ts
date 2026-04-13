@@ -82,7 +82,6 @@ export async function GET(req: NextRequest) {
       { 
         folderId: { $in: allVisibleFolderIds },
         $or: [
-          { 'accessControl.restrictedTo': { $size: 0 } },
           { 'accessControl.restrictedTo': { $exists: false } },
           { 'accessControl.restrictedTo': memberId }
         ]
