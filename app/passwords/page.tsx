@@ -27,7 +27,11 @@ function titleFromChromeRow(row: ChromePasswordRow): string {
 }
 
 export default function PasswordsPage() {
-  const { items, addItem, addItemsBulk, updateItem, deleteItem, folders, members, searchQuery, memberFilter, isLoading } = useVault();
+  const { 
+    items, addItem, addItemsBulk, updateItem, deleteItem, 
+    folders, members, searchQuery, memberFilter, isLoading,
+    selectAll
+  } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
@@ -103,6 +107,16 @@ export default function PasswordsPage() {
       </div>
 
       <div className="primary-action-row">
+        <button 
+          type="button" 
+          className="btn btn-ghost" 
+          onClick={() => {
+            const allIds = filtered.map(i => i._id);
+            selectAll(allIds);
+          }}
+        >
+          Select All
+        </button>
         <button type="button" className="btn btn-ghost" onClick={() => setImportOpen(true)}>
           <Download size={15} /> Import from Chrome
         </button>

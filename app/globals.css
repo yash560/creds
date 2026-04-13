@@ -2520,51 +2520,182 @@ body {
   }
 }
 /* Selection Mode Styles */
-.item-card.selectable-mode {
+.item-card.selection-mode {
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.item-card.selectable-mode:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-primary);
 }
 
 .item-card.isSelected {
-  border-color: var(--accent-amber) !important;
-  box-shadow:
-    0 0 0 2px rgba(245, 158, 11, 0.2),
-    0 8px 16px rgba(0, 0, 0, 0.4) !important;
-  background: rgba(245, 158, 11, 0.05) !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2), var(--shadow-md) !important;
+  background: rgba(99, 102, 241, 0.03) !important;
 }
 
-.selection-indicator {
+.selection-indicator-v2 {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--border-subtle);
-  background: var(--bg-elevated);
+  top: 10px;
+  left: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  transition: all 0.2s ease;
+  z-index: 20;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   color: transparent;
+  opacity: 0;
+  transform: scale(0.8);
 }
 
-.selection-indicator.active {
-  background: var(--accent-amber);
-  border-color: var(--accent-amber);
-  color: #000;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+.item-card:hover .selection-indicator-v2,
+.selection-indicator-v2.visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.item-card.selectable-mode .item-card-actions {
+.selection-indicator-v2:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-hover);
+}
+
+.selection-indicator-v2.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.item-card.selection-mode .item-card-actions {
+  opacity: 0 !important;
   pointer-events: none;
-  opacity: 0.3;
+}
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(13, 17, 23, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 1000;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bulk-action-bar.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+.bulk-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.bulk-count-badge {
+  background: var(--accent-primary);
+  color: white;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bulk-action-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.bulk-action-btn svg {
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.bulk-action-btn:hover svg {
+  color: var(--accent-primary);
+}
+
+.bulk-action-btn.danger:hover svg {
+  color: var(--accent-rose);
+}
+
+@media (max-width: 768px) {
+  .bulk-action-bar {
+    bottom: 84px; /* Above mobile nav */
+    width: 92%;
+    padding: 8px 12px;
+    gap: 12px;
+    border-radius: 16px;
+  }
+
+  .bulk-count {
+    padding-right: 12px;
+    gap: 8px;
+  }
+
+  .bulk-count span {
+    display: none; /* Hide 'Selected' text */
+  }
+
+  .bulk-actions {
+    gap: 4px;
+    flex: 1;
+    justify-content: space-around;
+  }
+
+  .bulk-action-btn {
+    padding: 6px;
+    min-width: 44px;
+  }
+
+  .bulk-action-btn span {
+    display: none; /* Hide labels on mobile */
+  }
+
+  .selection-indicator-v2 {
+    width: 26px; /* Slightly larger for touch */
+    height: 26px;
+    top: 8px;
+    left: 8px;
+  }
 }
 
 /* --- Skeleton & Loading States --- */

@@ -18,16 +18,16 @@ import type { VaultItem } from '@/lib/types';
 export default function DocumentsPage() {
   const {
     items,
-    addItem,
-    updateItem,
-    deleteItem,
     folders,
     members,
     categories,
-    mergeItems,
+    addItem,
+    updateItem,
+    deleteItem,
     searchQuery,
     memberFilter,
     isLoading,
+    selectAll,
   } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [zipOpen, setZipOpen] = useState(false);
@@ -38,8 +38,6 @@ export default function DocumentsPage() {
   const [folderId, setFolderId] = useState<string | null | undefined>(undefined);
   const [folderPanelOpen, setFolderPanelOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Derive subfolders of currently selected folder
   const subFolders = useMemo(() => {
@@ -77,31 +75,8 @@ export default function DocumentsPage() {
   const handleFolderSelect = (next: string | null) => {
     setFolderId(next);
     setFolderPanelOpen(false);
-    setSelectedIds(new Set());
-    setIsSelectionMode(false);
   };
 
-  const toggleSelection = (id: string, selected: boolean) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (selected) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  };
-
-  const handleMergeItems = async () => {
-    if (selectedIds.size < 2) return;
-    const ids = Array.from(selectedIds);
-    const targetId = ids[0];
-    const sourceIds = ids.slice(1);
-    
-    if (confirm(`Merge ${ids.length} documents into one? The metadata from the first selected item ("${items.find(i => i._id === targetId)?.title}") will be kept.`)) {
-      await mergeItems(targetId, sourceIds);
-      setSelectedIds(new Set());
-      setIsSelectionMode(false);
-    }
-  };
 
   const activeFolderName = useMemo(() => {
     if (folderId === null || folderId === undefined) return "All Documents";
@@ -125,36 +100,26 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          <div className="header-actions">
-            {isSelectionMode ? (
-              <>
-                <div style={{ marginRight: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-                  {selectedIds.size} <span className="mobile-hide">selected</span>
-                </div>
-                <button className="btn btn-primary" onClick={handleMergeItems} disabled={selectedIds.size < 2}>
-                  Merge <span className="mobile-hide">Selected</span>
-                </button>
-                <button className="btn btn-ghost" onClick={() => { setIsSelectionMode(false); setSelectedIds(new Set()); }}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <button className="btn btn-ghost" onClick={() => setIsSelectionMode(true)} title="Bulk actions">
-                  Select
-                </button>
-                <button className="btn btn-ghost" onClick={() => setCategoriesOpen(true)} title="Manage Categories">
-                  <Tag size={16} /> <span className="mobile-hide">Manage Categories</span>
-                </button>
-                <button className="btn btn-ghost" onClick={() => setZipOpen(true)} title="Import from ZIP">
-                  <Package size={16} /> <span className="mobile-hide">Import ZIP</span>
-                </button>
-                <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
-                  <Plus size={16} /> <span className="mobile-hide">Add Document</span>
-                  <span className="desktop-hide">Add</span>
-                </button>
-              </>
-            )}
+          <div className="header-actions" style={{ display: 'flex', gap: 8 }}>
+            <button 
+              className="btn btn-ghost" 
+              onClick={() => {
+                const allIds = filtered.map(i => i._id);
+                selectAll(allIds);
+              }}
+            >
+              Select All
+            </button>
+            <button className="btn btn-ghost" onClick={() => setCategoriesOpen(true)} title="Manage Categories">
+              <Tag size={16} /> <span className="mobile-hide">Manage Categories</span>
+            </button>
+            <button className="btn btn-ghost" onClick={() => setZipOpen(true)} title="Import from ZIP">
+              <Package size={16} /> <span className="mobile-hide">Import ZIP</span>
+            </button>
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>
+              <Plus size={16} /> <span className="mobile-hide">Add Document</span>
+              <span className="desktop-hide">Add</span>
+            </button>
             <button
               type="button"
               className="panel-toggle mobile-only"
@@ -267,9 +232,6 @@ export default function DocumentsPage() {
                       onEdit={setEditItem}
                       onDelete={setDeleteId}
                       onToggleFav={(it) => updateItem(it._id, { isFavourite: !it.isFavourite })}
-                      isSelected={selectedIds.has(item._id)}
-                      selectable={isSelectionMode}
-                      onSelect={toggleSelection}
                     />
                   ))}
                 </div>

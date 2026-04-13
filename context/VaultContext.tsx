@@ -28,6 +28,8 @@ interface VaultContextValue {
   addItemsBulk: (payloads: Partial<VaultItem>[]) => Promise<void>;
   updateItem: (id: string, payload: Partial<VaultItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  deleteItemsBulk: (ids: string[]) => Promise<void>;
+  updateItemsBulk: (ids: string[], payload: Partial<VaultItem>) => Promise<void>;
   mergeItems: (targetId: string, sourceIds: string[]) => Promise<void>;
   addFolder: (
     name: string,
@@ -43,6 +45,13 @@ interface VaultContextValue {
   addCategory: (name: string) => Promise<Category>;
   updateCategory: (id: string, name: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  selectedIds: string[];
+  toggleSelection: (id: string) => void;
+  clearSelection: () => void;
+  isSelectionMode: boolean;
+  setIsSelectionMode: (mode: boolean) => void;
+  selectAll: (itemIds: string[]) => void;
+  deselectAll: () => void;
 }
 
 const VaultContext = createContext<VaultContextValue | null>(null);
@@ -57,6 +66,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const { playSound } = useSound();
   const [searchQuery, setSearchQuery] = useState("");
   const [memberFilter, setMemberFilter] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const parseApiResponse = useCallback(async (res: Response) => {
     const txt = await res.text();
@@ -333,6 +344,47 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [cryptoKey, playSound],
   );
 
+  const deleteItemsBulk = useCallback(
+    async (ids: string[]) => {
+      // In a real app, we'd have a bulk delete endpoint. 
+      // For now, we'll do it sequentially and update state once.
+      await Promise.all(ids.map(id => fetch(`/api/items/${id}`, { method: "DELETE" })));
+      setItems((prev) => {
+        const toDelete = new Set(ids);
+        const next = prev.filter((it) => !toDelete.has(it._id));
+        if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
+        return next;
+      });
+      playSound('delete');
+    },
+    [cryptoKey, playSound],
+  );
+
+  const updateItemsBulk = useCallback(
+    async (ids: string[], payload: Partial<VaultItem>) => {
+      const prepared = await preparePayload(payload);
+      // Sequentially update items
+      await Promise.all(ids.map(id => 
+        fetch(`/api/items/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(prepared),
+        })
+      ));
+      
+      setItems((prev) => {
+        const toUpdate = new Set(ids);
+        const next = prev.map((it) =>
+          toUpdate.has(it._id) ? { ...it, ...prepared } : it,
+        );
+        if (cryptoKey) setEncryptedCache("items", next, cryptoKey);
+        return next;
+      });
+      playSound('success');
+    },
+    [cryptoKey, preparePayload, playSound],
+  );
+
   const mergeItems = useCallback(
     async (targetId: string, sourceIds: string[]) => {
       const res = await fetch("/api/items/merge", {
@@ -505,6 +557,26 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [parseApiResponse],
   );
 
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds([]);
+    setIsSelectionMode(false);
+  }, []);
+
+  const deselectAll = useCallback(() => {
+    setSelectedIds([]);
+  }, []);
+
+  const selectAll = useCallback((itemIds: string[]) => {
+    setSelectedIds(itemIds);
+    setIsSelectionMode(true);
+  }, []);
+
   return (
     <VaultContext.Provider
       value={{
@@ -521,6 +593,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         addItemsBulk,
         updateItem,
         deleteItem,
+        deleteItemsBulk,
+        updateItemsBulk,
         mergeItems,
         addFolder,
         updateFolder,
@@ -532,6 +606,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         addCategory,
         updateCategory,
         deleteCategory,
+        selectedIds,
+        toggleSelection,
+        clearSelection,
+        isSelectionMode,
+        setIsSelectionMode,
+        selectAll,
+        deselectAll,
       }}
     >
       {children}

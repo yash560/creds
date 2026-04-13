@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { KeyRound, CreditCard, FileText, ScanLine, Star, Pencil, Trash2 } from 'lucide-react';
+import { KeyRound, CreditCard, FileText, ScanLine, Star, Pencil, Trash2, Check } from 'lucide-react';
 import type { VaultItem } from '@/lib/types';
 import CopyButton from './CopyButton';
 import Tooltip from './Tooltip';
 import { detectCardBrand } from '@/lib/card-ocr-parse';
 import { useSound } from '@/context/SoundContext';
+import { useVault } from '@/context/VaultContext';
 
 interface ItemCardProps {
   item: VaultItem;
@@ -15,9 +16,6 @@ interface ItemCardProps {
   onDelete: (id: string) => void;
   onToggleFav?: (item: VaultItem) => void;
   onClick?: (item: VaultItem) => void;
-  isSelected?: boolean;
-  selectable?: boolean;
-  onSelect?: (id: string, selected: boolean) => void;
 }
 
 const TYPE_ICONS = {
@@ -57,22 +55,31 @@ export default function ItemCard({
   onEdit, 
   onDelete, 
   onToggleFav, 
-  onClick,
-  isSelected,
-  selectable,
-  onSelect
+  onClick
 }: ItemCardProps) {
+  const { isSelectionMode, selectedIds, toggleSelection, setIsSelectionMode } = useVault();
   const { Icon, cls } = TYPE_ICONS[item.type] ?? TYPE_ICONS.document;
   const { playSound } = useSound();
 
+  const isItemSelected = selectedIds.includes(item._id);
+
   const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     playSound('click');
-    if (selectable && onSelect) {
+    if (isSelectionMode) {
       e.stopPropagation();
-      onSelect(item._id, !isSelected);
+      toggleSelection(item._id);
     } else {
       onClick?.(item);
     }
+  };
+
+  const handleSelectToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playSound('click');
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+    }
+    toggleSelection(item._id);
   };
 
   const subtitle = getSubtitle(item);
@@ -120,17 +127,19 @@ export default function ItemCard({
 
   return (
     <div
-      className={`item-card ${item.type} ${isSelected ? 'isSelected' : ''} ${selectable ? 'selectable-mode' : ''}`}
+      className={`item-card ${item.type} ${isItemSelected ? 'isSelected' : ''} ${isSelectionMode ? 'selection-mode' : ''}`}
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleCardClick(e)}
     >
-      {selectable && (
-        <div className={`selection-indicator ${isSelected ? 'active' : ''}`}>
-          {isSelected && <Star size={10} fill="currentColor" />}
-        </div>
-      )}
+      <div 
+        className={`selection-indicator-v2 ${isItemSelected ? 'active' : ''} ${isSelectionMode ? 'visible' : ''}`}
+        onClick={handleSelectToggle}
+      >
+        <Check size={12} strokeWidth={3} />
+      </div>
+      
       {item.type === 'card' ? (
         <>
           <div className="card-summary">

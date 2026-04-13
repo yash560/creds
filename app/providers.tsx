@@ -9,6 +9,7 @@ import MobileNav from "@/components/MobileNav";
 import LoginGate from "./login-gate";
 import { usePathname, redirect } from "next/navigation";
 import { SoundProvider } from "@/context/SoundContext";
+import BulkActionBar from "@/components/BulkActionBar";
 
 function AppShell({ children }: { children: ReactNode }) {
   const { isAuthenticated, step } = useAuth();
@@ -101,6 +102,7 @@ function AppShell({ children }: { children: ReactNode }) {
           <main className="page-body animate-fadeIn">{children}</main>
         </div>
         <MobileNav />
+        <BulkActionBar />
       </div>
     </VaultProvider>
   );

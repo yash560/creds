@@ -12,7 +12,11 @@ import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 export default function CardsPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, memberFilter, isLoading } = useVault();
+  const { 
+    items, addItem, updateItem, deleteItem, 
+    folders, members, searchQuery, memberFilter, isLoading,
+    selectAll
+  } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -36,7 +40,18 @@ export default function CardsPage() {
           </div>
           <p className="page-subtitle">{filtered.length} card{filtered.length !== 1 ? 's' : ''}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Card</button>
+        <div className="header-actions" style={{ display: 'flex', gap: 8 }}>
+          <button 
+            className="btn btn-ghost" 
+            onClick={() => {
+              const allIds = filtered.map(i => i._id);
+              selectAll(allIds);
+            }}
+          >
+            Select All
+          </button>
+          <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Card</button>
+        </div>
       </div>
 
       {isLoading ? (

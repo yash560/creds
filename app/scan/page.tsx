@@ -11,7 +11,11 @@ import { filterItems } from '@/lib/search-utils';
 import type { VaultItem } from '@/lib/types';
 
 export default function ScanPage() {
-  const { items, addItem, updateItem, deleteItem, folders, members, searchQuery, memberFilter } = useVault();
+  const { 
+    items, addItem, updateItem, deleteItem, 
+    folders, members, searchQuery, memberFilter,
+    selectAll
+  } = useVault();
   const [addOpen, setAddOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<VaultItem | null>(null);
   const [editItem, setEditItem] = useState<VaultItem | null>(null);
@@ -35,7 +39,18 @@ export default function ScanPage() {
           </div>
           <p className="page-subtitle">Use live camera or upload images and PDFs when adding a scan</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Scan</button>
+        <div className="header-actions" style={{ display: 'flex', gap: 8 }}>
+          <button 
+            className="btn btn-ghost" 
+            onClick={() => {
+              const allIds = filtered.map(i => i._id);
+              selectAll(allIds);
+            }}
+          >
+            Select All
+          </button>
+          <button className="btn btn-primary" onClick={() => setAddOpen(true)}><Plus size={15} /> Add Scan</button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
