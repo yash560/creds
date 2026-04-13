@@ -4,11 +4,11 @@ import { InvitationModel, UserModel } from '@/lib/models';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  props: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await props.params;
     await connectDB();
-    const { token } = await params;
     const invitation = await InvitationModel.findOne({ token });
 
     if (!invitation) {

@@ -5,8 +5,9 @@ import { getSession } from '@/lib/session';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { token: string } }
+  props: { params: Promise<{ token: string }> }
 ) {
+  const { token } = await props.params;
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ ok: false, error: 'You must be signed in to join a vault' }, { status: 401 });
@@ -14,7 +15,6 @@ export async function POST(
 
   try {
     await connectDB();
-    const { token } = await params;
     const invitation = await InvitationModel.findOne({ token });
 
     if (!invitation || invitation.status !== 'pending' || new Date() > invitation.expiresAt) {
