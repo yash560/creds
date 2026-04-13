@@ -56,7 +56,7 @@ export interface AuthContextValue {
   signOut: () => Promise<void>;
   goToRegister: () => void;
   goToSignIn: () => void;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (invitationToken?: string) => Promise<void>;
   updateUser: (data: Partial<AuthUser>) => void;
   clearError: () => void;
 }
@@ -338,10 +338,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStep("signin");
   }, []);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (invitationToken?: string) => {
     setError("");
     try {
-      const res = await fetch("/api/auth/google/url");
+      const query = invitationToken ? `?invitation=${encodeURIComponent(invitationToken)}` : "";
+      const res = await fetch(`/api/auth/google/url${query}`);
       const data = await res.json();
       if (data.ok && data.url) {
         window.location.href = data.url;

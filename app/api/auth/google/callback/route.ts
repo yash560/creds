@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import { UserModel } from '@/lib/models';
+import { UserModel, InvitationModel, FamilyMemberModel } from '@/lib/models';
 import { createSessionCookie, COOKIE_NAME, COOKIE_OPTS } from '@/lib/session';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const invitationToken = searchParams.get('state');
 
   if (error) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signin?error=${error}`);
@@ -51,6 +52,13 @@ export async function GET(req: NextRequest) {
     }
 
     await connectDB();
+    let validInvitation = null;
+    if (invitationToken) {
+      const inv = await InvitationModel.findOne({ token: invitationToken, status: 'pending' });
+      if (inv && new Date() <= inv.expiresAt) {
+        validInvitation = inv;
+      }
+    }
 
     // 3. Find or Create the user
     let user = await UserModel.findOne({ email: googleUser.email.toLowerCase() });
@@ -69,6 +77,29 @@ export async function GET(req: NextRequest) {
       user.googleId = googleUser.id;
       if (googleUser.picture) user.avatarUrl = googleUser.picture;
       await user.save();
+    }
+
+    if (validInvitation) {
+      const ownerId = validInvitation.vaultOwnerId;
+      if (!user.joinedVaultId) {
+        user.joinedVaultId = ownerId;
+        await user.save();
+      }
+      const existingMember = await FamilyMemberModel.findOne({
+        userId: ownerId,
+        memberUserId: user._id.toString(),
+      });
+      if (!existingMember) {
+        await FamilyMemberModel.create({
+          userId: ownerId,
+          name: googleUser.name || user.name || user.email,
+          memberUserId: user._id.toString(),
+          role: validInvitation.role,
+          permissions: [],
+        });
+      }
+      validInvitation.status = 'accepted';
+      await validInvitation.save();
     }
 
     // 4. Create Session

@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
   const REDIRECT_URI = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/google/callback`;
+  const { searchParams } = new URL(req.url);
+  const invitationToken = searchParams.get('invitation');
 
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json({ ok: false, error: 'Google Client ID not configured' }, { status: 500 });
@@ -19,6 +21,7 @@ export async function GET() {
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
     ].join(' '),
+    state: invitationToken || undefined,
   };
 
   const qs = new URLSearchParams(options);
